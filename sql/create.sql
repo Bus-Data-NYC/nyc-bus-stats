@@ -1,3 +1,19 @@
+DROP TABLE IF EXISTS rds_indexes;
+CREATE TABLE `rds_indexes` (
+  rds_index INTEGER NOT NULL,
+  route VARCHAR(5) NOT NULL,
+  direction CHAR(1) NOT NULL,
+  stop_id INTEGER NOT NULL,
+  KEY rds (rds_index)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS trip_indexes;
+CREATE TABLE trip_indexes (
+  trip_index INT(11) NOT NULL,
+  gtfs_trip VARCHAR(64) DEFAULT NULL,
+  KEY t (trip_index)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 -- From: Nathan Johnson
 
 -- So, at some point I did dump, compress, and upload some "calls" data - the inferred
@@ -20,7 +36,7 @@ CREATE TABLE IF NOT EXISTS calls (
     source char(1) not null,
     rds_index smallint not null,
     deviation smallint not null,
-    PRIMARY KEY (trip_index, stop_sequence, vehicle_id)
+    INDEX rds (rds_index)
 );
 
 -- In my wisdom, I reindexed the GTFS trip_ids as integers (trip_index), but I'm

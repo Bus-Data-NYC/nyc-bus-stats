@@ -1,6 +1,6 @@
 SERVER = https://s3.amazonaws.com/data2.mytransit.nyc
 YEAR := $(word 1,$(subst -, ,$*))
-MYSQLFLAGS = -u $(USER) -p
+MYSQLFLAGS = -u $(USER) -p $(PASS)
 DATABASE = turnaround
 
 CALL_FIELDS = vehicle_id, \
@@ -25,12 +25,12 @@ all:
 
 mysql-calls-%: calls/%.tsv
 	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(^)' INTO TABLE $(DATABASE).calls \
+		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
 mysql-schedule-%: schedule/%.tsv
 	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(^)' INTO TABLE $(DATABASE).schedule \
+		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
 
 .INTERMEDIARY: %.tsv
@@ -49,7 +49,15 @@ calls/%.tsv.xz: | calls
 schedule/%.tsv.xz: | schedule
 	curl -o $@ $(SERVER)/bus_schedule/$(YEAR)/schedule_$*.tsv.xz
 
-init: sql/create.sql
+init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv
 	mysql $(DATABASE) $(MYSQLFLAGS) < $<
+
+	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'lookups/rds_indexes.tsv' INTO TABLE $(DATABASE).rds_indexes \
+		FIELDS TERMINATED BY '\t' (stop_sequence, route, direction, rds_index)"
+
+	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE $(DATABASE).trip_indexes \
+		FIELDS TERMINATED BY '\t' (trip_index, gtfs_trip)"
 
 calls schedule:; mkdir -p $@
