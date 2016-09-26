@@ -1,7 +1,8 @@
 SERVER = https://s3.amazonaws.com/data2.mytransit.nyc
 YEAR := $(word 1,$(subst -, ,$*))
-MYSQLFLAGS = -u $(USER) -p $(PASS)
+MYSQLFLAGS = -u $(USER) -p$(PASS)
 DATABASE = turnaround
+MYSQL = mysql $(DATABASE) $(MYSQLFLAGS)
 
 CALL_FIELDS = vehicle_id, \
 	trip_index, \
@@ -24,12 +25,12 @@ SCHEDULE_FIELDS = date, \
 all:
 
 mysql-calls-%: calls/%.tsv
-	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
 mysql-schedule-%: schedule/%.tsv
-	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
 
@@ -49,14 +50,32 @@ calls/%.tsv.xz: | calls
 schedule/%.tsv.xz: | schedule
 	curl -o $@ $(SERVER)/bus_schedule/$(YEAR)/schedule_$*.tsv.xz
 
+## gtfs
+
+mysql-gtfs-%: sql/gtfs.sql gtfs/%/stop_times.txt gtfs/%/trips.txt
+	$(MYSQL) < $<
+	$(MYSQL) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'gtfs/$*/stop_times.txt' INTO TABLE $(DATABASE).stop_times_gtfs \
+		FIELDS TERMINATED BY ',' IGNORE 1 LINES \
+		(trip_id, arrival_time, departure_time, stop_id, stop_sequence, pickup_type, drop_off_type)"
+	$(MYSQL) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'gtfs/$*/trips.txt' INTO TABLE $(DATABASE).trips_gtfs \
+		FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' IGNORE 1 LINES \
+		LINES TERMINATED BY '\n' \
+		(route_id, service_id, trip_id, trip_headsign, direction_id, shape_id, @null)"
+
+gtfs/%/stop_times.txt gtfs/%/trips.txt: gtfs/%.zip
+	@mkdir -p gtfs/$*
+	unzip -jnd $(@D) $< stop_times.txt trips.txt
+
 init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv
-	mysql $(DATABASE) $(MYSQLFLAGS) < $<
+	$(MYSQL) < $<
 
-	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE 'lookups/rds_indexes.tsv' INTO TABLE $(DATABASE).rds_indexes \
-		FIELDS TERMINATED BY '\t' (stop_sequence, route, direction, rds_index)"
+		FIELDS TERMINATED BY '\t' (rds_index, route, direction, stop_id)"
 
-	mysql $(DATABASE) $(MYSQLFLAGS) --local-infile \
+	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE $(DATABASE).trip_indexes \
 		FIELDS TERMINATED BY '\t' (trip_index, gtfs_trip)"
 
