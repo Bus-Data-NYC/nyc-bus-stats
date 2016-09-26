@@ -4,14 +4,16 @@ CREATE TABLE `rds_indexes` (
   route VARCHAR(5) NOT NULL,
   direction CHAR(1) NOT NULL,
   stop_id INTEGER NOT NULL,
-  KEY rds (rds_index)
+  PRIMARY KEY (rds_index)
+  KEY r (route, direction, stop_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS trip_indexes;
 CREATE TABLE trip_indexes (
   trip_index INT(11) NOT NULL,
   gtfs_trip VARCHAR(64) DEFAULT NULL,
-  KEY t (trip_index)
+  PRIMARY KEY (trip_index),
+  KEY gtfs_trip (gtfs_trip)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- From: Nathan Johnson

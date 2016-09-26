@@ -19,7 +19,9 @@ CREATE TABLE IF NOT EXISTS `stop_times_gtfs` (
     `stop_sequence` tinyint(4) DEFAULT NULL,
     `pickup_type` char(1) DEFAULT NULL,
     `drop_off_type` char(1) DEFAULT NULL,
-    KEY `trip_id` (`trip_id`, `stop_id`, `stop_sequence`)
+    KEY `trip_id` (`trip_id`, `stop_id`, `stop_sequence`),
+    KEY `time` (`arrival_time`),
+    KEY `stop` (`stop_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `headways_gtfs` (
