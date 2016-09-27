@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS calls (
     source char(1) not null,
     rds_index smallint not null,
     deviation smallint not null,
-    INDEX rds (rds_index)
+    INDEX rds (rds_index),
+    INDEX trips (trip_index)
 );
 
 -- In my wisdom, I reindexed the GTFS trip_ids as integers (trip_index), but I'm
