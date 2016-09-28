@@ -109,12 +109,28 @@ WHERE
     AND b.`call_time` > a.`call_time`;
 */
 
+DROP FUNCTION IF EXISTS day_period;
+CREATE FUNCTION day_period (d DATETIME)
+    RETURNS INTEGER DETERMINISTIC
+    RETURN CASE
+        WHEN HOUR(d) BETWEEN 0 AND 6 THEN 5
+        WHEN HOUR(d) BETWEEN 7 AND 9 THEN 1
+        WHEN HOUR(d) BETWEEN 10 AND 15 THEN 2
+        WHEN HOUR(d) BETWEEN 16 AND 18 THEN 3
+        WHEN HOUR(d) BETWEEN 19 AND 22 THEN 4
+        WHEN HOUR(d) BETWEEN 23 AND 24 THEN 5
+    END;
+
 -- join calls to itself and headways_gtfs to compare scheduled
 -- and observed headways
 SELECT
     r.`route`,
+    r.`direction`,
+    r.`stop_id`,
     (TIME_TO_SEC(TIMEDIFF(c1.`call_time`, c2.`call_time`)) - IF(c2.`dwell_time` > 0, c2.`dwell_time`, 0)) AS observed_headway,
     h.`headway` scheduled_headway,
+    WEEKDAY(c1.`call_time`) >= 5 weekend,
+    day_period(c1.`call_time`) period,
     COUNT(c1.*) call_count,
     COUNT(
         IF(observed.`headway` < h.`headway` * 0.25, 1, NULL)
@@ -127,8 +143,15 @@ FROM
     LEFT JOIN headways_gtfs h ON (h.`trip_index` = c1.`trip_index`)
     LEFT JOIN rds_indexes r ON (r.`rds_index` = c1.`rds_index`)
 WHERE
-    HOUR(c1.`call_time`) BETWEEN 10 AND 16
+    -- currently only looking at call time
+    day_period(c1.`call_time`) = 2
+    -- compare successive stops
     AND n1.`stop_increment` - 1  = n2.`stop_increment`
+    -- first stop doesn't have a headway
     AND n1.`stop_increment` > 1
-GROUP BY r.`route`
+GROUP BY
+    -- route, direction, stop, weekend/weekend and day period
+    r.`rds_index`,
+    WEEKDAY(c1.`call_time`) >= 5,
+    day_period(c1.`call_time`)
 
