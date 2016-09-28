@@ -1,5 +1,14 @@
 -- Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25262
 
+/*
+    General strategy:
+        1) Create a table with headway of each scheduled trip in GTFS (`headways_gtfs`).
+        2) Create a tracking index for each observed call in `calls`. This index
+            counts up for each call at a given stop by a given route in a given service.
+        3) Join each call to the previous call to get observed headway (slow!)
+        4) Join calls to `headways_gtfs` using trip_index, calculate headway difference. 
+    */
+
 -- join schedule to schedule to get scheduled headways (minutes)
 DROP TABLE IF EXISTS `headways_gtfs`;
 CREATE TABLE `headways_gtfs` (
@@ -37,102 +46,80 @@ WHERE
     AND t1.`route_id` = t2.`route_id`
     AND t1.`service_id` = t2.`service_id`
     AND t1.`direction_id` = t2.`direction_id`
-    AND a.`stop_sequence` = 1
-    AND z.`stop_sequence` = 1
-GROUP BY r.`rds_index`, a.`trip_id`;
+GROUP BY a.`trip_id`, r.`rds_index`;
+
+--- Count up calls at stops, grouped by rds_index
+SET @stop = 0, @rds = NULL, @service = NULL;
+
+DROP TABLE IF EXISTS `call_increments`;
+CREATE TABLE call_increments (
+    call_id INTEGER NOT NULL PRIMARY KEY,
+    stop_increment SMALLINT NOT NULL
+);
+
+SET @stop = 0, @rds = NULL;
+INSERT INTO call_increments (`call_id`, `stop_increment`)
+SELECT `call_id`, `stop` FROM (
+    SELECT
+        `call_id`,
+        @stop := IF(@rds = `rds_index`, @stop + 1, 1) AS stop,
+        @rds := `rds_index`
+    FROM (
+        SELECT
+            `call_id`,
+            `rds_index`
+        FROM `calls` 
+            LEFT JOIN `trip_indexes` USING (`trip_index`)
+        WHERE dwell_time > 0
+        ORDER BY
+            `rds_index`,
+            IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`) ASC
+    ) AS sorted
+) AS indexed;
 
 -- join calls to calls to get observed headway
+-- not necessary, retained here for demonstration
+/*
+DROP TABLE IF EXISTS call_headways;
+CREATE TABLE call_headways (
+    call_id INTEGER NOT NULL PRIMARY KEY,
+    headway MEDIUMINT UNSIGNED NOT NULL
+);
+
+INSERT INTO call_headways (call_id, headway)
 SELECT
-    *,
-    (TIME_TO_SEC(TIMEDIFF(a.`call_time`, b.`call_time`)) + a.`dwell_time`) / 60. headway
+    a.`call_id`,
+    (TIME_TO_SEC(TIMEDIFF(b.`call_time`, a.`call_time`)) - IF(a.`dwell_time` > 0, a.`dwell_time`, 0)) AS headway
 FROM
-    `calls` a
-    LEFT JOIN `trip_indexes` m ON (m.`trip_index` = a.`trip_index`)
-    LEFT JOIN `trips_gtfs` t1 ON (t1.`trip_id` = m.`gtfs_trip`)
-    LEFT JOIN `calls` b ON (a.`rds_index` = b.`rds_index`)
-    LEFT JOIN `trip_indexes` n ON (n.`trip_index` = b.`trip_index`)
-    LEFT JOIN `trips_gtfs` t2 ON (t2.`trip_id` = n.`gtfs_trip`)
+    calls a
+    LEFT JOIN call_increments c1 ON (c1.`call_id`=a.`call_id`)
+    JOIN calls b ON (a.`rds_index`=b.`rds_index`)
+    LEFT JOIN call_increments c2 ON (c2.`call_id`=b.`call_id`)
 WHERE
-    b.`call_time` < a.`call_time`
-    AND t2.`service_id` = t1.`service_id`;
+    c1.`stop_increment` - 1  = c2.`stop_increment`
+    AND b.`call_time` > a.`call_time`;
+*/
 
--- join calls to stop_times_gtfs and headways_gtfs
-
+-- join calls to itself and headways_gtfs to compare scheduled
+-- and observed headways
 SELECT
-    *
+    r.`route`,
+    (TIME_TO_SEC(TIMEDIFF(c1.`call_time`, c2.`call_time`)) - IF(c2.`dwell_time` > 0, c2.`dwell_time`, 0)) AS observed_headway,
+    h.`headway` scheduled_headway,
+    COUNT(c1.*) call_count,
+    COUNT(
+        IF(observed.`headway` < h.`headway` * 0.25, 1, NULL)
+    ) bunch_count
 FROM
-    calls
-    LEFT JOIN headways_gtfs h ON (
-        h.`rds_index` = calls.`rds_index`
-        AND h.`trip_index` = calls.`trip_index`
-    )
+    calls c1
+    LEFT JOIN call_increments n1 ON (n1.`call_id`=c1.`call_id`)
+    LEFT JOIN calls c2 ON (c2.`rds_index`=c1.`rds_index`)
+    LEFT JOIN call_increments n2 ON (n2.`call_id`=c2.`call_id`)
+    LEFT JOIN headways_gtfs h ON (h.`trip_index` = c1.`trip_index`)
+    LEFT JOIN rds_indexes r ON (r.`rds_index` = c1.`rds_index`)
+WHERE
+    HOUR(c1.`call_time`) BETWEEN 10 AND 16
+    AND n1.`stop_increment` - 1  = n2.`stop_increment`
+    AND n1.`stop_increment` > 1
+GROUP BY r.`route`
 
-
---- Other approach:
---- Indexing calls and stop_times by service, rds_index
-SET @stop = 0, @rds = NULL, @service = NULL;
-
-CREATE TABLE calls_by_service (
-    service_id varchar(64) DEFAULT NULL,
-    rds_index INTEGER NOT NULL,
-    stop SMALLINT NOT NULL,
-    KEY (rds_index, stop),
-    KEY (service_id)
-);
-
-SET @stop = 0, @rds = NULL, @service = NULL;
-
-INSERT INTO calls_by_service (`stop`, `service_id`, `rds_index`)
-SELECT
-    @stop := IF(
-        @service_id = `service_id` && @rds = `rds_index`,
-        @stop + 1,
-        1
-    ) AS "stop",
-    @service_id := `service_id`,
-    @rds := `rds_index`
-FROM (
-    SELECT `service_id`, `rds_index`, `call_time`
-    FROM `calls` AS c
-        LEFT JOIN `trip_indexes` i ON (i.`trip_index` = c.`trip_index`)
-        LEFT JOIN `trips_gtfs` t ON (t.`trip_id` = i.`gtfs_trip`)
-    ORDER BY
-        `service_id`,
-        c.`rds_index`,
-        c.`call_time` ASC
-) a;
-
--- stop times
-
-CREATE TABLE stop_times_by_service (
-    service_id varchar(64) DEFAULT NULL,
-    rds_index INTEGER NOT NULL,
-    stop SMALLINT NOT NULL,
-    KEY (rds_index, stop),
-    KEY (service_id)
-);
-
-SET @stop = 0, @rds = NULL, @service = NULL;
-INSERT INTO stop_times_by_service (stop, service_id, rds_index)
-SELECT
-    @stop := IF(
-        @service_id = `service_id` && @rds = `rds_index`,
-        @stop + 1,
-        1
-    ) AS "stop",
-    @service_id := `service_id`,
-    @rds := `rds_index`
-FROM (
-    SELECT `service_id`, `rds_index`, `arrival_time`
-        FROM `stop_times_gtfs` AS a
-            LEFT JOIN `trips_gtfs` t ON (a.`trip_id` = t.`trip_id`)
-            LEFT JOIN `rds_indexes` r ON (
-                r.`route` = t.`route_id`
-                AND r.`stop_id` = a.`stop_id`
-                AND r.`direction` = t.`direction_id`
-            )
-        ORDER BY
-            `service_id`,
-            r.`rds_index`,
-            `arrival_time` ASC
-) B;
