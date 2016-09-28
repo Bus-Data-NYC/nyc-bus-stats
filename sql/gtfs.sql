@@ -35,3 +35,16 @@ CREATE TABLE IF NOT EXISTS `headways_gtfs` (
     `arrival_time` time DEFAULT NULL,
     `headway` double DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS calendar_gtfs (
+    `service_id` VARCHAR(64) NOT NULL PRIMARY KEY, 
+    `monday` TINYINT(1) NOT NULL, 
+    `tuesday` TINYINT(1) NOT NULL, 
+    `wednesday` TINYINT(1) NOT NULL, 
+    `thursday` TINYINT(1) NOT NULL, 
+    `friday` TINYINT(1) NOT NULL, 
+    `saturday` TINYINT(1) NOT NULL, 
+    `sunday` TINYINT(1) NOT NULL, 
+    `start_date` DATE NOT NULL, 
+    `end_date` DATE NOT NULL
+);

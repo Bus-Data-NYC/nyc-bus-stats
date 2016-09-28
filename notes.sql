@@ -1,20 +1,28 @@
 -- Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25262
 
 -- join schedule to schedule to get scheduled headways (minutes)
+DROP TABLE IF EXISTS `headways_gtfs`;
+CREATE TABLE `headways_gtfs` (
+  `trip_index` int(11) NOT NULL PRIMARY KEY,
+  `stop_id` INTEGER NOT NULL,
+  `headway` MEDIUMINT UNSIGNED DEFAULT NULL,
+  KEY stop (stop_id)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE headways_gtfs AS
-SELECT DISTINCT
-    r.`rds_index`,
-    a.`trip_id`,
+INSERT INTO headways_gtfs (trip_index, stop_id, headway)
+SELECT
+    i.`trip_index`,
+    a.`stop_id`,
     TIME_TO_SEC(TIMEDIFF(
         a.`arrival_time`,
         CAST(
-            GROUP_CONCAT(z.`arrival_time` ORDER BY z.`arrival_time` DESC, '|', 1)
-            AS TIME)
-    )) / 60. headway
+            GROUP_CONCAT(z.`arrival_time` ORDER BY z.`arrival_time` DESC, '|')
+            AS TIME
+        )
+    )) AS headway
 FROM
     `stop_times_gtfs` a
-    LEFT JOIN `stop_times_gtfs` z ON (a.`stop_id` = z.`stop_id`)
+    LEFT JOIN `stop_times_gtfs` z ON (a.`stop_id` = z.`stop_id` AND a.stop_sequence = z.stop_sequence)
     LEFT JOIN `trips_gtfs` t1 ON (t1.`trip_id` = a.`trip_id`)
     LEFT JOIN `trips_gtfs` t2 ON (t2.`trip_id` = z.`trip_id`)
     LEFT JOIN `rds_indexes` r ON (
