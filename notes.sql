@@ -18,6 +18,7 @@ CREATE TABLE `headways_gtfs` (
   KEY stop (stop_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+SET @month_start = '2015-10-01';
 INSERT INTO headways_gtfs (trip_index, stop_id, headway)
 SELECT
     i.`trip_index`,
@@ -31,7 +32,10 @@ SELECT
     )) AS headway
 FROM
     `stop_times_gtfs` a
-    LEFT JOIN `stop_times_gtfs` z ON (a.`stop_id` = z.`stop_id` AND a.stop_sequence = z.stop_sequence)
+    LEFT JOIN `stop_times_gtfs` z ON (
+        a.`stop_id` = z.`stop_id`
+        AND a.`stop_sequence` = z.`stop_sequence`
+    )
     LEFT JOIN `trips_gtfs` t1 ON (t1.`trip_id` = a.`trip_id`)
     LEFT JOIN `trips_gtfs` t2 ON (t2.`trip_id` = z.`trip_id`)
     LEFT JOIN `rds_indexes` r ON (
@@ -40,12 +44,17 @@ FROM
         AND r.`stop_id` = a.`stop_id`
     )
     LEFT JOIN `trip_indexes` i ON (t1.`trip_id` = i.`gtfs_trip`)
+    LEFT JOIN `calendar_gtfs` cg ON (cg.`service_id` = t1.`service_id`)
 WHERE
     z.`arrival_time` < a.`arrival_time`
     AND t1.`trip_id` != t2.`trip_id`
     AND t1.`route_id` = t2.`route_id`
     AND t1.`service_id` = t2.`service_id`
     AND t1.`direction_id` = t2.`direction_id`
+    AND (
+        @month_start BETWEEN cg.`start_date` AND cg.`end_date`
+        OR DATE_ADD(@month_start, INTERVAL 1 MONTH) BETWEEN cg.`start_date` AND cg.`end_date`
+    )
 GROUP BY a.`trip_id`, r.`rds_index`;
 
 --- Count up calls at stops, grouped by rds_index
