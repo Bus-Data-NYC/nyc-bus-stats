@@ -1,4 +1,8 @@
--- Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25262
+-- Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25,262
+
+-- date trips in 2015-10:  1,471,140
+
+-- stop times in 2015-10: 56,485,803
 
 -- join calls to calls to get observed headway
 -- not necessary, retained here for testing
