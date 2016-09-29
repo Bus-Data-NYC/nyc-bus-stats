@@ -7,32 +7,64 @@ SET @the_month = '2015-10-01';
 -- currently only looking at call times in period=2
 SET @the_period = 2;
 
---- Count up calls at stops, grouped by rds_index
-DROP TABLE IF EXISTS `call_increments`;
-CREATE TABLE call_increments (
+-- find observed headways
+DROP TABLE IF EXISTS hw_observed;
+CREATE TABLE hw_observed (
     call_id INTEGER NOT NULL PRIMARY KEY,
-    stop_increment SMALLINT NOT NULL
+    headway SMALLINT UNSIGNED NOT NULL
 );
 
-SET @stop = 0, @rds = NULL;
-INSERT INTO call_increments (`call_id`, `stop_increment`)
-SELECT `call_id`, `stop` FROM (
+SET @prev_rds = NULL,
+    @prev_depart = NULL;
+
+INSERT hw_observed
+SELECT call_id, headway FROM (
     SELECT
-        `call_id`,
-        @stop := IF(@rds = `rds_index`, @stop + 1, 1) AS stop,
-        @rds := `rds_index`
+        call_id,
+        @headway := IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_depart)), NULL) AS headway,
+        @prev_rds := rds_index,
+        @prev_depart := IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
+    FROM calls
+    WHERE
+        DATE(call_time) BETWEEN @start_date AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    ORDER BY
+        rds_index,
+        IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
+) observed;
+
+-- find scheduled headways
+-- join schedule to schedule to get scheduled headways (minutes)
+DROP TABLE IF EXISTS `hw_gtfs`;
+CREATE TABLE hw_gtfs (
+  `trip_index` int(11) NOT NULL PRIMARY KEY,
+  `rds_index` INTEGER NOT NULL,
+  `date` date NOT NULL,
+  `headway` MEDIUMINT UNSIGNED DEFAULT NULL,
+  KEY k (trip_index, stop_id, date)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+INSERT INTO headways_gtfs (trip_index, rds_index, date, headway)
+SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
+    SELECT
+        trip_index,
+        @headway := IF(rds=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL) headway,
+        @prev_rds := rds rds_index,
+        @prev_time := call_time
     FROM (
         SELECT
-            `call_id`,
-            `rds_index`
-        FROM `calls`
-            LEFT JOIN `trip_indexes` USING (`trip_index`)
-        WHERE dwell_time > 0
-        ORDER BY
-            `rds_index`,
-            IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`) ASC
-    ) AS sorted
-) AS indexed;
+            rds_index,
+            trip_index,
+            ADDTIME(dt.`date`, st.`time`) call_time
+        FROM
+            date_trips dt
+            LEFT JOIN stop_times st USING (trip_index)
+        WHERE
+            dt.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+            AND pickup_type != 1
+        LIMIT 100
+    ) a
+    ORDER BY rds, call_time
+) b;
 
 -- All day is divided into five parts.
 DROP FUNCTION IF EXISTS day_period;
@@ -47,40 +79,6 @@ CREATE FUNCTION day_period (d DATETIME)
         WHEN HOUR(d) BETWEEN 23 AND 24 THEN 5
     END;
 
--- join calls to itself and headways_gtfs to compare scheduled
--- and observed headways
-SELECT
-    r.`route`,
-    r.`direction`,
-    r.`stop_id`,
-    (TIME_TO_SEC(TIMEDIFF(c1.`call_time`, c2.`call_time`)) - IF(c2.`dwell_time` > 0, c2.`dwell_time`, 0)) AS observed_headway,
-    h.`headway` scheduled_headway,
-    WEEKDAY(c1.`call_time`) >= 5 weekend,
-    day_period(c1.`call_time`) period,
-    COUNT(c1.*) call_count,
-    COUNT(
-        IF(observed.`headway` < h.`headway` * 0.25, 1, NULL)
-    ) bunch_count
-FROM
-    calls c1
-    LEFT JOIN call_increments n1 ON (n1.`call_id`=c1.`call_id`)
-    LEFT JOIN calls c2 ON (c2.`rds_index`=c1.`rds_index`)
-    LEFT JOIN call_increments n2 ON (n2.`call_id`=c2.`call_id`)
-    LEFT JOIN headways_gtfs h ON (h.`trip_index` = c1.`trip_index`)
-    LEFT JOIN rds_indexes r ON (r.`rds_index` = c1.`rds_index`)
-WHERE
-    -- currently only looking at call time
-    day_period(c1.`call_time`) = 2
-    -- compare successive stops
-    AND n1.`stop_increment` - 1  = n2.`stop_increment`
-    -- first stop doesn't have a headway
-    AND n1.`stop_increment` > 1
-GROUP BY
-    -- route, direction, stop, weekend/weekend and day period
-    r.`rds_index`,
-    WEEKDAY(c1.`call_time`) >= 5,
-    day_period(c1.`call_time`)
-
 DROP TABLE IF EXISTS bunching_averaged;
 CREATE TABLE bunching_averaged (
   `route` varchar(5),
@@ -93,7 +91,8 @@ CREATE TABLE bunching_averaged (
   KEY rds (route, direction, stop_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
--- join observed headways to average headways
+-- join calls to hw_observed and hw_gtfs and compare
+
 INSERT INTO bunching_averaged
     (route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
@@ -103,39 +102,28 @@ SELECT
     `period`,
     `weekend`,
     COUNT(*) call_count,
-    COUNT(IF(observed_headway < average_scheduled_headway * 0.25, 1, NULL)) bunch_count
+    COUNT(IF(headway_observed < headway_scheduled * 0.25, 1, NULL)) bunch_count
 FROM (
     SELECT
-        c1.`rds_index`,
         r.`route`,
         r.`direction`,
         r.`stop_id`,
-        c1.`call_time`,
-        TIME_TO_SEC(TIMEDIFF(c1.`call_time`, c2.`call_time`)) - IF(c2.`dwell_time` > 0, c2.`dwell_time`, 0) AS observed_headway,
-        3600.0 / s.pickups AS average_scheduled_headway,
-        WEEKDAY(c1.`call_time`) >= 5 AS weekend,
-        day_period(c1.`call_time`) AS period
+        c.`call_time`,
+        o.`headway` headway_observed,
+        g.`headway` headway_scheduled,
+        WEEKDAY(c.`call_time`) >= 5 AS weekend,
+        day_period(c.`call_time`) period
     FROM
-        calls c1
-        LEFT JOIN call_increments n1 ON (n1.`call_id`=c1.`call_id`)
-        LEFT JOIN calls c2 ON (c2.`rds_index`=c1.`rds_index`)
-        LEFT JOIN call_increments n2 ON (n2.`call_id`=c2.`call_id`)
-        LEFT JOIN schedule s ON (
-            s.`rds_index` = c1.`rds_index`
-            AND s.`date` = DATE(c1.`call_time`)
-            AND s.`hour` = HOUR(c1.`call_time`)
-        )
-        LEFT JOIN rds_indexes r ON (r.`rds_index` = c1.`rds_index`)
+        calls c
+        LEFT JOIN hw_observed o ON (c.`call_id` = o.`call_id`)
+        LEFT JOIN hw_gtfs g ON (g.`trip_index` = c.`trip_index` AND g.`rds_index` = c.`rds_index` AND DATE(c.`call_time`) = g.`date`)
+        LEFT JOIN rds_indexes r ON (r.`rds_index` = c.`rds_index`)
     WHERE
         -- restrict to year-month in question
-        YEAR(s.`date`) = YEAR(@the_month)
-        AND MONTH(s.`date`) = MONTH(@the_month)
+        YEAR(c.`call_time`) = YEAR(@the_month)
+        AND MONTH(c.`call_time`) = MONTH(@the_month)
         -- currently only looking at call times in period=2
-        AND day_period(c1.`call_time`) = @the_period
-        -- compare successive stops
-        AND n1.`stop_increment` - 1  = n2.`stop_increment`
-        -- first stop doesn't have a headway
-        AND n1.`stop_increment` > 1
+        AND day_period(c.`call_time`) = @the_period
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;
