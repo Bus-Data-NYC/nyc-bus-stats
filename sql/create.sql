@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS calls (
     source char(1) not null,
     rds_index smallint not null,
     deviation smallint not null,
+    -- Add a PRIMARY KEY index to calls table
+    `call_id` BIGINT(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     INDEX rds (rds_index),
     INDEX trips (trip_index)
 );
