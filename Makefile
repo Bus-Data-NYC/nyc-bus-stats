@@ -29,7 +29,7 @@ mysql-calls-%: calls/%.tsv
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
-mysql-schedule-%: schedule/%.tsv
+mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
@@ -47,8 +47,12 @@ calls/%.tsv.xz: | calls
 
 # Schedules available for 2014-08 to 2016-02
 # format: $(SERVER)/bus_schedule/YYYY/schedule_YYYY-MM.tsv.xz
-schedule/%.tsv.xz: | schedule
+schedule/schedule_%.tsv.xz: | schedule
 	curl -o $@ $(SERVER)/bus_schedule/$(YEAR)/schedule_$*.tsv.xz
+
+schedule/date_trips.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/date_trips.tsv.xz
+
+schedule/stop_times.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/stop_times.tsv.xz
 
 ## gtfs
 
@@ -76,7 +80,7 @@ gtfs/%/calendar.txt gtfs/%/stop_times.txt gtfs/%/trips.txt: gtfs/%.zip
 	@mkdir -p gtfs/$*
 	unzip -jnd $(@D) $< stop_times.txt trips.txt calendar.txt
 
-init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv
+init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/date_trips.tsv schedule/stop_times.tsv
 	$(MYSQL) < $<
 
 	$(MYSQL) --local-infile \
@@ -87,4 +91,13 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv
 		-e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE $(DATABASE).trip_indexes \
 		FIELDS TERMINATED BY '\t' (trip_index, gtfs_trip)"
 
-calls schedule:; mkdir -p $@
+	$(MYSQL) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'trips/date_trips.tsv' INTO TABLE $(DATABASE).date_trips \
+		FIELDS TERMINATED BY '\t' (date, trip_index)"
+
+	$(MYSQL) --local-infile \
+		-e "LOAD DATA LOCAL INFILE 'trips/stop_times.tsv' INTO TABLE $(DATABASE).stop_times \
+		FIELDS TERMINATED BY '\t' \
+		(trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
+
+calls schedule trips:; mkdir -p $@
