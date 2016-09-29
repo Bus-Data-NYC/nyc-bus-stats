@@ -36,19 +36,19 @@ SELECT call_id, headway FROM (
 -- join schedule to schedule to get scheduled headways (minutes)
 DROP TABLE IF EXISTS `hw_gtfs`;
 CREATE TABLE hw_gtfs (
-  `trip_index` int(11) NOT NULL PRIMARY KEY,
+  `trip_index` int(11) NOT NULL,
   `rds_index` INTEGER NOT NULL,
   `date` date NOT NULL,
   `headway` MEDIUMINT UNSIGNED DEFAULT NULL,
-  KEY k (trip_index, stop_id, date)
+  KEY k (trip_index, rds_index, date)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-INSERT INTO headways_gtfs (trip_index, rds_index, date, headway)
+INSERT INTO hw_gtfs (trip_index, rds_index, date, headway)
 SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
     SELECT
         trip_index,
-        @headway := IF(rds=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL) headway,
-        @prev_rds := rds rds_index,
+        @headway := IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL) headway,
+        @prev_rds := rds_index AS rds_index,
         @prev_time := call_time
     FROM (
         SELECT
@@ -61,9 +61,8 @@ SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
         WHERE
             dt.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
             AND pickup_type != 1
-        LIMIT 100
     ) a
-    ORDER BY rds, call_time
+    ORDER BY rds_index, call_time
 ) b;
 
 -- All day is divided into five parts.
@@ -79,8 +78,8 @@ CREATE FUNCTION day_period (d DATETIME)
         WHEN HOUR(d) BETWEEN 23 AND 24 THEN 5
     END;
 
-DROP TABLE IF EXISTS bunching_averaged;
-CREATE TABLE bunching_averaged (
+DROP TABLE IF EXISTS bunching;
+CREATE TABLE bunching (
   `route` varchar(5),
   `direction` char(1),
   `stop_id` int(11),
@@ -93,7 +92,7 @@ CREATE TABLE bunching_averaged (
 
 -- join calls to hw_observed and hw_gtfs and compare
 
-INSERT INTO bunching_averaged
+INSERT INTO bunching
     (route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
     `route`,
@@ -105,6 +104,7 @@ SELECT
     COUNT(IF(headway_observed < headway_scheduled * 0.25, 1, NULL)) bunch_count
 FROM (
     SELECT
+        c.`rds_index`,
         r.`route`,
         r.`direction`,
         r.`stop_id`,
