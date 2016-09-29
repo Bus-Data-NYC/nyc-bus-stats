@@ -80,7 +80,7 @@ SELECT `call_id`, `stop` FROM (
         SELECT
             `call_id`,
             `rds_index`
-        FROM `calls` 
+        FROM `calls`
             LEFT JOIN `trip_indexes` USING (`trip_index`)
         WHERE dwell_time > 0
         ORDER BY
@@ -90,7 +90,7 @@ SELECT `call_id`, `stop` FROM (
 ) AS indexed;
 
 -- join calls to calls to get observed headway
--- not necessary, retained here for demonstration
+-- not necessary, retained here for testing
 /*
 DROP TABLE IF EXISTS call_headways;
 CREATE TABLE call_headways (
