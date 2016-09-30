@@ -17,6 +17,7 @@ CREATE TABLE hw_observed (
 SET @prev_rds = NULL,
     @prev_depart = NULL;
 
+-- 5 min
 INSERT hw_observed
 SELECT call_id, headway FROM (
     SELECT
@@ -34,6 +35,7 @@ SELECT call_id, headway FROM (
 
 -- find scheduled headways
 -- join schedule to schedule to get scheduled headways (minutes)
+-- 6 min
 DROP TABLE IF EXISTS `hw_gtfs`;
 CREATE TABLE hw_gtfs (
   `trip_index` int(11) NOT NULL,
@@ -91,7 +93,7 @@ CREATE TABLE bunching (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- join calls to hw_observed and hw_gtfs and compare
-
+-- 12 minutes
 INSERT INTO bunching
     (route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
