@@ -8,6 +8,7 @@ SET @the_period = 2;
 
 DROP TABLE IF EXISTS bunching_averaged;
 CREATE TABLE bunching_averaged (
+  `month` date NOT NULL,
   `route` varchar(5),
   `direction` char(1),
   `stop_id` int(11),
@@ -20,8 +21,9 @@ CREATE TABLE bunching_averaged (
 
 -- join observed headways to average headways
 INSERT INTO bunching_averaged
-    (route, direction, stop_id, period, weekend, call_count, bunch_count)
+    (month, route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
+    @the_month month,
     `route`,
     `direction`,
     `stop_id`,
