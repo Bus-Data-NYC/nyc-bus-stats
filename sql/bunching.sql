@@ -30,7 +30,7 @@ SELECT call_id, headway FROM (
         @prev_depart := IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
     FROM calls
     WHERE
-        DATE(call_time) BETWEEN @start_date AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+        DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
     ORDER BY
         rds_index,
         IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
