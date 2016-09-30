@@ -54,32 +54,6 @@ schedule/date_trips.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/date_t
 
 schedule/stop_times.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/stop_times.tsv.xz
 
-## gtfs
-
-mysql-gtfs-%: sql/gtfs.sql gtfs/%/calendar.txt gtfs/%/stop_times.txt gtfs/%/trips.txt
-	$(MYSQL) < $<
-
-	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE 'gtfs/$*/stop_times.txt' INTO TABLE $(DATABASE).stop_times_gtfs \
-		FIELDS TERMINATED BY ',' IGNORE 1 LINES \
-		(trip_id, arrival_time, departure_time, stop_id, stop_sequence, pickup_type, drop_off_type)"
-
-	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE 'gtfs/$*/trips.txt' INTO TABLE $(DATABASE).trips_gtfs \
-		FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' \
-		LINES TERMINATED BY '\n' IGNORE 1 LINES \
-		(route_id, service_id, trip_id, trip_headsign, direction_id, shape_id, @null)"
-
-	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE 'gtfs/$*/calendar.txt' INTO TABLE $(DATABASE).calendar_gtfs \
-		FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' IGNORE 1 LINES \
-		(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, @end) \
-		SET end_date=INSERT(INSERT(@end, 7, 0, '-'), 5, 0, '-')"
-
-gtfs/%/calendar.txt gtfs/%/stop_times.txt gtfs/%/trips.txt: gtfs/%.zip
-	@mkdir -p gtfs/$*
-	unzip -jnd $(@D) $< stop_times.txt trips.txt calendar.txt
-
 init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/date_trips.tsv schedule/stop_times.tsv
 	$(MYSQL) < $<
 
