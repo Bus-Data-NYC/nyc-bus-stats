@@ -45,14 +45,13 @@ mysql-schedule-%: schedule/schedule_%.tsv
 calls/%.tsv.xz: | calls
 	curl -o $@ $(SERVER)/bus_calls/$(YEAR)/calls_$*.tsv.xz
 
+schedule/%.tsv.xz: | schedule
+	curl -o $@ $(SERVER)/bus_schedule/$*.tsv.xz
+
 # Schedules available for 2014-08 to 2016-02
 # format: $(SERVER)/bus_schedule/YYYY/schedule_YYYY-MM.tsv.xz
 schedule/schedule_%.tsv.xz: | schedule
 	curl -o $@ $(SERVER)/bus_schedule/$(YEAR)/schedule_$*.tsv.xz
-
-schedule/date_trips.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/date_trips.tsv.xz
-
-schedule/stop_times.tsv.xz: | schedule; curl -o $@ $(SERVER)/bus_schedule/stop_times.tsv.xz
 
 init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/date_trips.tsv schedule/stop_times.tsv
 	$(MYSQL) < $<

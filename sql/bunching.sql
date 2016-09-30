@@ -80,8 +80,8 @@ CREATE FUNCTION day_period (d DATETIME)
         WHEN HOUR(d) BETWEEN 23 AND 24 THEN 5
     END;
 
-DROP TABLE IF EXISTS bunching;
-CREATE TABLE bunching (
+-- bunching table
+CREATE TABLE IF NOT EXISTS bunching (
   `month` date NOT NULL,
   `route` varchar(5),
   `direction` char(1),
