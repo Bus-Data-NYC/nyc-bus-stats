@@ -20,9 +20,13 @@ SCHEDULE_FIELDS = date, \
 	pickups, \
 	exception
 
-.PHONY: all init mysql-calls-%
+.PHONY: all init mysql-calls-% bunch-%
 
 all:
+
+bunch-%: sql/bunching.sql
+	{ echo SET @the_month=\'$*-01\'\; ; cat $< ; } | \
+	$(MYSQL)
 
 mysql-calls-%: calls/%.tsv
 	$(MYSQL) --local-infile \

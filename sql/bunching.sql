@@ -2,7 +2,8 @@
     Requires all of the tables in create.sql.
 */
 -- Set to the first day of the month in question
-SET @the_month = '2015-10-01';
+-- This is done in the Makefile. Uncomment if using the file directly.
+-- SET @the_month = '2015-10-01';
 
 -- currently only looking at call times in period=2
 SET @the_period = 2;
