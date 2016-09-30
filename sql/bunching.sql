@@ -25,7 +25,7 @@ INSERT hw_observed
 SELECT call_id, headway FROM (
     SELECT
         call_id,
-        @headway := IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_depart)), NULL) AS headway,
+        @headway := GREATEST(0, IF(`rds_index`=@prev_rds, TIME_TO_SEC(TIMEDIFF(`call_time`, @prev_depart)), NULL)) AS headway,
         @prev_rds := rds_index,
         @prev_depart := IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
     FROM calls
@@ -33,7 +33,8 @@ SELECT call_id, headway FROM (
         DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
     ORDER BY
         rds_index,
-        IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
+        -- ordering by call time in order to avoid bug when one bus pulls in + leaves while the another stays put
+        `call_time` ASC
 ) observed;
 
 /* 
