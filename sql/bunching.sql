@@ -18,6 +18,8 @@ CREATE TABLE hw_observed (
 SET @prev_rds = NULL,
     @prev_depart = NULL;
 
+-- sort calls by route/direction/stop and departure time.
+-- Use variables to calculate headway between successive fields
 -- 5 min
 INSERT hw_observed
 SELECT call_id, headway FROM (
@@ -34,8 +36,11 @@ SELECT call_id, headway FROM (
         IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
 ) observed;
 
--- find scheduled headways
--- join schedule to schedule to get scheduled headways (minutes)
+/* 
+ * find scheduled headways
+ * Same general strategy as observed headways, except here the date of the scheduled call
+ * comes from the `date_trips` table.
+*/
 -- 6 min
 DROP TABLE IF EXISTS `hw_gtfs`;
 CREATE TABLE hw_gtfs (
