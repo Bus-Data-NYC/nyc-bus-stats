@@ -94,8 +94,8 @@ CREATE FUNCTION day_period (d DATETIME)
 -- bunching table
 CREATE TABLE IF NOT EXISTS bunching (
   `month` date NOT NULL,
-  `route` varchar(5),
-  `direction` char(1),
+  `route_id` varchar(5),
+  `direction_id` char(1),
   `stop_id` int(11),
   `period` int(1) NOT NULL,
   `weekend` int(1) NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS bunching (
 -- join calls to hw_observed and hw_gtfs and compare
 -- 12 minutes
 INSERT INTO bunching
-    (month, route, direction, stop_id, period, weekend, call_count, bunch_count)
+    (month, route_id, direction_id, stop_id, period, weekend, call_count, bunch_count)
 SELECT
     @the_month month,
     `route`,
