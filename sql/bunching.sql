@@ -15,6 +15,11 @@ CREATE TABLE hw_observed (
     headway SMALLINT UNSIGNED NOT NULL
 );
 
+DROP FUNCTION IF EXISTS depart_time;
+CREATE FUNCTION depart_time(call_time DATETIME, dwell_time INTEGER)
+    RETURNS DATETIME DETERMINISTIC
+    RETURN IF(dwell_time > 0, TIMESTAMPADD(SECOND, dwell_time, call_time), call_time);
+
 SET @prev_rds = NULL,
     @prev_depart = NULL;
 
@@ -25,16 +30,15 @@ INSERT hw_observed
 SELECT call_id, headway FROM (
     SELECT
         call_id,
-        @headway := GREATEST(0, IF(`rds_index`=@prev_rds, TIME_TO_SEC(TIMEDIFF(`call_time`, @prev_depart)), NULL)) AS headway,
+        @headway := IF(`rds_index`=@prev_rds, TIME_TO_SEC(TIMEDIFF(depart_time(call_time, dwell_time), @prev_depart)), NULL) AS headway,
         @prev_rds := rds_index,
-        @prev_depart := IF(`dwell_time` > 0, TIMESTAMPADD(SECOND, `dwell_time`, `call_time`), `call_time`)
+        @prev_depart := depart_time(call_time, dwell_time)
     FROM calls
     WHERE
         DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
     ORDER BY
         rds_index,
-        -- ordering by call time in order to avoid bug when one bus pulls in + leaves while the another stays put
-        `call_time` ASC
+        depart_time(call_time, dwell_time) ASC
 ) observed;
 
 /* 
