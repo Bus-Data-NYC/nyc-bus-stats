@@ -33,12 +33,13 @@ SELECT call_id, headway FROM (
         @headway := IF(`rds_index`=@prev_rds, TIME_TO_SEC(TIMEDIFF(depart_time(call_time, dwell_time), @prev_depart)), NULL) AS headway,
         @prev_rds := rds_index,
         @prev_depart := depart_time(call_time, dwell_time)
-    FROM calls
-    WHERE
-        DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
-    ORDER BY
-        rds_index,
-        depart_time(call_time, dwell_time) ASC
+    FROM (
+        SELECT * FROM calls
+        WHERE DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+        ORDER BY
+            rds_index,
+            depart_time(call_time, dwell_time) ASC
+    ) calls
 ) observed;
 
 /* 
@@ -62,7 +63,7 @@ SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
         trip_index,
         @headway := IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL) headway,
         @prev_rds := rds_index AS rds_index,
-        @prev_time := call_time
+        @prev_time := call_time AS call_time
     FROM (
         SELECT
             rds_index,
@@ -74,8 +75,10 @@ SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
         WHERE
             dt.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
             AND pickup_type != 1
+        ORDER BY
+            rds_index,
+            call_time
     ) a
-    ORDER BY rds_index, call_time
 ) b;
 
 -- All day is divided into five parts.
