@@ -5,9 +5,6 @@
 -- This is done in the Makefile. Uncomment if using the file directly.
 -- SET @the_month = '2015-10-01';
 
--- currently only looking at call times in period=2
-SET @the_period = 2;
-
 -- find observed headways
 DROP TABLE IF EXISTS hw_observed;
 CREATE TABLE hw_observed (
@@ -141,8 +138,6 @@ FROM (
         -- restrict to year-month in question
         YEAR(c.`call_time`) = YEAR(@the_month)
         AND MONTH(c.`call_time`) = MONTH(@the_month)
-        -- currently only looking at call times in period=2
-        AND day_period(c.`call_time`) = @the_period
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;
