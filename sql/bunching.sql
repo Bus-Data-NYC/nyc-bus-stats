@@ -126,7 +126,8 @@ FROM (
         c.`call_time`,
         o.`headway` headway_observed,
         g.`headway` headway_scheduled,
-        WEEKDAY(c.`call_time`) >= 5 AS weekend,
+        WEEKDAY(c.`call_time`) >= 5 OR 
+            DATE(c.`call_time`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
         day_period(c.`call_time`) period
     FROM
         calls c
