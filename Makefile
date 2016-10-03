@@ -29,12 +29,12 @@ bunch-%: sql/bunching.sql
 
 mysql-calls-%: calls/%.tsv
 	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).calls \
+		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
 mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE $(DATABASE).schedule \
+		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
 
 .INTERMEDIARY: %.tsv
@@ -63,11 +63,11 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/d
 	$(MYSQL) < $<
 
 	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE 'lookups/rds_indexes.tsv' INTO TABLE $(DATABASE).rds_indexes \
+		-e "LOAD DATA LOCAL INFILE 'lookups/rds_indexes.tsv' INTO TABLE rds_indexes \
 		FIELDS TERMINATED BY '\t' (rds_index, route, direction, stop_id)"
 
 	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE $(DATABASE).trip_indexes \
+		-e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE trip_indexes \
 		FIELDS TERMINATED BY '\t' (trip_index, gtfs_trip)"
 
 	$(MYSQL) --local-infile \
