@@ -17,8 +17,7 @@ CREATE FUNCTION depart_time(call_time DATETIME, dwell_time INTEGER)
     RETURNS DATETIME DETERMINISTIC
     RETURN IF(dwell_time > 0, TIMESTAMPADD(SECOND, dwell_time, call_time), call_time);
 
-SET @prev_rds = NULL,
-    @prev_depart = NULL;
+SET @prev_rds = NULL;
 
 -- sort calls by route/direction/stop and departure time.
 -- Use variables to calculate headway between successive fields
@@ -53,6 +52,8 @@ CREATE TABLE hw_gtfs (
   `headway` MEDIUMINT UNSIGNED DEFAULT NULL,
   KEY k (trip_index, rds_index, date)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+SET @prev_rds = NULL;
 
 INSERT INTO hw_gtfs (trip_index, rds_index, date, headway)
 SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
