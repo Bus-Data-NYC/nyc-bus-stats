@@ -1,15 +1,13 @@
-DROP TABLE IF EXISTS rds_indexes;
-CREATE TABLE `rds_indexes` (
+CREATE TABLE IF NOT EXISTS rds_indexes (
   rds_index INTEGER NOT NULL,
   route VARCHAR(5) NOT NULL,
   direction CHAR(1) NOT NULL,
   stop_id INTEGER NOT NULL,
-  PRIMARY KEY (rds_index)
+  PRIMARY KEY (rds_index),
   KEY r (route, direction, stop_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS trip_indexes;
-CREATE TABLE trip_indexes (
+CREATE TABLE IF NOT EXISTS trip_indexes (
   trip_index INT(11) NOT NULL,
   gtfs_trip VARCHAR(64) DEFAULT NULL,
   PRIMARY KEY (trip_index),
