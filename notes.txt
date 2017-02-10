@@ -1,0 +1,52 @@
+Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25,262
+
+date trips in 2015-10:  1,471,140
+
+stop times in 2015-10: 56,485,803
+
+join calls to calls to get observed headway
+not necessary, retained here for testing
+
+````
+DROP TABLE IF EXISTS call_headways;
+CREATE TABLE call_headways (
+    call_id INTEGER NOT NULL PRIMARY KEY,
+    headway MEDIUMINT UNSIGNED NOT NULL
+);
+
+INSERT INTO call_headways (call_id, headway)
+SELECT
+    a.`call_id`,
+    (TIME_TO_SEC(TIMEDIFF(b.`call_time`, a.`call_time`)) - IF(a.`dwell_time` > 0, a.`dwell_time`, 0)) AS headway
+FROM
+    calls a
+    LEFT JOIN call_increments c1 ON (c1.`call_id`=a.`call_id`)
+    JOIN calls b ON (a.`rds_index`=b.`rds_index`)
+    LEFT JOIN call_increments c2 ON (c2.`call_id`=b.`call_id`)
+WHERE
+    c1.`stop_increment` - 1  = c2.`stop_increment`
+    AND b.`call_time` > a.`call_time`;
+````
+
+Phase 2:
+
+* “Conservative” EWT, down to the stop level
+    excess wait time, omitting any 'missing' buses from the analysis
+
+    Observed/actual headway - scheduled headway, exclude calls where next bus is "missing"
+    Already have A.H. and S.H., just need to find calls that are "missing"
+
+* On-time terminal departures, at the route level
+    percentage of buses in excess of three minutes behind schedule as of the third stop on each given route
+
+* Wait assessment, down to the stop level
+    calculated according to the MTA's definition for buses (something like, headways exceeding the schedule by 3 minutes or more for high frequency service; or 5 minutes or more for low frequency service)
+
+* Stop spacing, down to the stop level
+    how far apart are bus stops
+
+* Circuitous routes, at the route level
+    how indirect is the path of a given route relative to a direct (straight line) route
+
+* Route-level EVT
+    "excess in-vehicle time" (the difference between scheduled trip time and actual trip time from end-to-end of the route)
