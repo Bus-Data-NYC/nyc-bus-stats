@@ -28,7 +28,7 @@ INSERT tmp_sh
             rds,
             ADDTIME(date, IF(date_offset < 1, departure_time, SUBTIME(departure_time, '24:00:00'))) AS call_time
         FROM date_trips AS dt, stop_times AS st
-        WHERE date BETWEEN DATE_SUB(@start_date, INTERVAL 1 DAY
+        WHERE date BETWEEN DATE_SUB(@start_date, INTERVAL 1 DAY)
             AND DATE_ADD(@end_date, INTERVAL 1 DAY)
             AND dt.trip_index = st.trip_index
             AND pickup_type != 1

@@ -35,8 +35,8 @@ SELECT call_id, headway FROM (
         ORDER BY
             rds_index,
             depart_time(call_time, dwell_time) ASC
-    ) calls
-) observed;
+    ) a
+) b;
 
 /* 
  * find scheduled headways
