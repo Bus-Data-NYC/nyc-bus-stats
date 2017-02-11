@@ -12,11 +12,6 @@ CREATE TABLE hw_observed (
     headway SMALLINT UNSIGNED NOT NULL
 );
 
-DROP FUNCTION IF EXISTS depart_time;
-CREATE FUNCTION depart_time(call_time DATETIME, dwell_time INTEGER)
-    RETURNS DATETIME DETERMINISTIC
-    RETURN IF(dwell_time > 0, TIMESTAMPADD(SECOND, dwell_time, call_time), call_time);
-
 SET @prev_rds = NULL;
 
 -- sort calls by route/direction/stop and departure time.
@@ -78,19 +73,6 @@ SELECT trip_index, rds_index, DATE(call_time) date, headway FROM (
             call_time
     ) a
 ) b;
-
--- All day is divided into five parts.
-DROP FUNCTION IF EXISTS day_period;
-CREATE FUNCTION day_period (d DATETIME)
-    RETURNS INTEGER DETERMINISTIC
-    RETURN CASE
-        WHEN HOUR(d) BETWEEN 0 AND 6 THEN 5
-        WHEN HOUR(d) BETWEEN 7 AND 9 THEN 1
-        WHEN HOUR(d) BETWEEN 10 AND 15 THEN 2
-        WHEN HOUR(d) BETWEEN 16 AND 18 THEN 3
-        WHEN HOUR(d) BETWEEN 19 AND 22 THEN 4
-        WHEN HOUR(d) BETWEEN 23 AND 24 THEN 5
-    END;
 
 -- bunching table
 CREATE TABLE IF NOT EXISTS bunching (
