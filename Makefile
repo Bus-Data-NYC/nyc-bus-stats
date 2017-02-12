@@ -23,7 +23,7 @@ SCHEDULE_FIELDS = date, \
 
 all:
 
-bunch-%: sql/headway.sql sql/bunching.sql
+bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL)
 
