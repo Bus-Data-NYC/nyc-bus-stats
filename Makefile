@@ -23,6 +23,33 @@ SCHEDULE_FIELDS = date, \
 
 all:
 
+gtfs/bus_distances.csv: gtfs/bus_distances_mtabc_20150906.csv gtfs/bus_distances_nyct_bus_20150905.csv
+	csvstack $^ | \
+	sort -ru | \
+	csvsort -rc simple_ratio > $@
+
+gtfs/bus_distances_%.csv: gtfs/gtfs_%/shapes.geojson gtfs/gtfs_%/trips.dbf gtfs/simplified_shapes.shp
+	@rm -f $@
+	ogr2ogr $@ $< -f CSV -overwrite -dialect sqlite \
+		-sql "SELECT DISTINCT t.route_id, shape.shape_id, service_id, \
+		ROUND(ST_Length(shape.Geometry, 1) / ST_Distance(StartPoint(shape.Geometry), EndPoint(shape.Geometry), 1), 2) crow_ratio, \
+		ROUND(ST_Length(shape.Geometry, 1) / ST_Length(simp.Geometry, 1), 2) simple_ratio \
+		FROM OGRGeoJSON shape \
+		LEFT JOIN '$(word 2,$(^D))'.trips t ON (t.shape_id = shape.id) \
+		LEFT JOIN $(word 3,$(^D)).bus_shapes simp ON (simp.id = shape.id)"
+
+gtfs/gtfs_%/trips.dbf: gtfs/gtfs_%/trips.csv
+	ogr2ogr $@ $<
+
+gtfs/gtfs_%/trips.csv: gtfs/gtfs_%/trips.txt
+	csvcut -c route_id,service_id,shape_id $< | \
+	csvgrep -c service_id -m Weekday | \
+	sort -ru > $@
+
+gtfs/simplified_shapes.shp: gtfs/gtfs_nyct_bus_20150905/shapes.geojson gtfs/gtfs_mtabc_20150906/shapes.geojson
+	ogr2ogr -f 'ESRI Shapefile' -overwrite -simplify 0.01 $@ $<
+	ogr2ogr -f 'ESRI Shapefile' -update -append -simplify 0.01 $@ $(word 2,$^)
+
 bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL)
