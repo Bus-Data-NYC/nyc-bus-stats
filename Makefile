@@ -23,6 +23,23 @@ SCHEDULE_FIELDS = date, \
 
 all:
 
+spacing/stop_spacing_avg.csv: spacing/stop_spacing.db sql/stop_spacing_avg.sql
+	sqlite3 -csv -header $< 'SELECT route, direction, \
+	ROUND(SUM(spacing_m) / COUNT(*) - 1) avg_spacing_m \
+	FROM stop_spacing \
+	GROUP BY route, direction;' > $@
+
+spacing/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/gtfs_mtabc_20150906/stops.txt gtfs/gtfs_nyct_bus_20150905/stops.txt
+	@rm -f $@
+	spatialite $@ ''
+	sqlite3 $@ 'CREATE TABLE rds_indexes (rds_index INTEGER, route VARCHAR, direction CHAR(1), stop_id INTEGER); \
+		CREATE TABLE stops (stop_id INTEGER, stop_name VARCHAR, stop_desc VARCHAR, stop_lat FLOAT, stop_lon FLOAT)';
+	sqlite3 -separator '	' $@ '.import $< rds_indexes'
+	sqlite3 -separator , $@ '.import gtfs/gtfs_mtabc_20150906/stops.txt stops'
+	csvcut -c stop_id,stop_name,stop_desc,stop_lat,stop_lon gtfs/gtfs_nyct_bus_20150905/stops.txt | \
+		sqlite3 -separator , $@ '.import /dev/stdin stops'
+	spatialite -header -csv $@ < sql/stop_spacing.sql
+
 gtfs/bus_route_ratios.csv: gtfs/bus_ratios_mtabc_20150906.csv gtfs/bus_ratios_nyct_bus_20150905.csv
 	csvstack $^ | \
 	sort -ru | \
