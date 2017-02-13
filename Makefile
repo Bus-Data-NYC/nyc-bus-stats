@@ -23,12 +23,12 @@ SCHEDULE_FIELDS = date, \
 
 all:
 
-gtfs/bus_distances.csv: gtfs/bus_distances_mtabc_20150906.csv gtfs/bus_distances_nyct_bus_20150905.csv
+gtfs/bus_route_ratios.csv: gtfs/bus_ratios_mtabc_20150906.csv gtfs/bus_ratios_nyct_bus_20150905.csv
 	csvstack $^ | \
 	sort -ru | \
 	csvsort -rc simple_ratio > $@
 
-gtfs/bus_distances_%.csv: gtfs/gtfs_%/shapes.geojson gtfs/gtfs_%/trips.dbf gtfs/simplified_shapes.shp
+gtfs/bus_ratios_%.csv: gtfs/gtfs_%/shapes.geojson gtfs/gtfs_%/trips.dbf gtfs/simplified_shapes.shp
 	@rm -f $@
 	ogr2ogr $@ $< -f CSV -overwrite -dialect sqlite \
 		-sql "SELECT DISTINCT t.route_id, shape.shape_id, service_id, \
