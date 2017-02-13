@@ -64,14 +64,15 @@ FROM (
     ) b
 ) c
 WHERE headway IS NOT NULL;
+
 DROP TABLE IF EXISTS ewt_conservative;
 CREATE TABLE ewt_conservative (
     `rds_index` INTEGER NOT NULL,
     `trip_index` int(11) NOT NULL,
     `call_time` datetime NOT NULL,
     `weekend` int(1) NOT NULL,
-    `period` int(1) NOT NULL
-    headway SMALLINT UNSIGNED NOT NULL,
+    `period` int(1) NOT NULL,
+    `ewt` SMALLINT UNSIGNED NOT NULL,
     KEY a (`trip_index`, `rds_index`, `call_time`)
 );
 
@@ -81,12 +82,10 @@ SELECT
     o.`rds_index`,
     o.`trip_index`,
     o.`call_time`,
-    r.`stop_id`,
-    o.`call_time`,
     WEEKDAY(o.`call_time`) >= 5 OR 
         DATE(o.`call_time`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
     day_period(o.`call_time`) period,
-    CASE WHEN o.`headway` > g.`headway` THEN o.`headway` - g.`headway` ELSE 0 END ewt
+    o.`headway` - g.`headway` AS `ewt`
 FROM
     hw_observed_conservative o
     LEFT JOIN hw_gtfs g ON (g.`trip_index` = o.`trip_index` AND g.`rds_index` = o.`rds_index` AND DATE(o.`call_time`) = DATE(g.`datetime`))
