@@ -84,7 +84,7 @@ SELECT
     o.`call_time`,
     WEEKDAY(o.`call_time`) >= 5 OR 
         DATE(o.`call_time`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
-    day_period(o.`call_time`) period,
+    day_period(TIME(o.`call_time`)) period,
     o.`headway` - g.`headway` AS `ewt`
 FROM
     hw_observed_conservative o

@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS schedule (
 
 -- All day is divided into five parts.
 DROP FUNCTION IF EXISTS day_period;
-CREATE FUNCTION day_period (d DATETIME)
+CREATE FUNCTION day_period (d TIME)
     RETURNS INTEGER DETERMINISTIC
     RETURN CASE
         WHEN HOUR(d) BETWEEN 0 AND 6 THEN 5
