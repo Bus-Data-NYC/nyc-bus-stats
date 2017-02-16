@@ -1,38 +1,18 @@
--- This is done in the Makefile. Uncomment if using the file directly.
--- SET @the_month = '2015-10-01';
-
-DROP TABLE IF EXISTS `last_stops`;
-CREATE TABLE last_stops (
-    `trip_id` VARCHAR(32) PRIMARY KEY,
-    `stop_count` INTEGER NOT NULL
-);
-
-INSERT last_stops
-SELECT
-    tg.`trip_id`,
-    MAX(stg.`stop_sequence`) stop_count
-FROM trips_gtfs tg
-    LEFT JOIN `stop_times_gtfs` stg ON (tg.`trip_id` = stg.`trip_id`)
-    LEFT JOIN `calendar_gtfs` cg ON (cg.`service_id` = tg.`service_id`)
-WHERE
-    `monday` = 1
-    AND cg.`start_date` <= DATE_ADD(@the_month, INTERVAL 1 MONTH)
-    AND cg.`end_date` >= @the_month
-GROUP BY (tg.`trip_id`);
+-- SET @the_month = '2015-10-01', @the_route = 'B11';
 
 SELECT
     tg.`route_id`,
     @the_month month,
     day_period(s1.`arrival_time`) period,
     LEAST(COUNT(c2.`call_time`), COUNT(c1.`call_time`)) count_trips,
-    AVG(TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`))) / 60 sched_duration_avg,
-    AVG(TIME_TO_SEC(TIMEDIFF(
+    ROUND(AVG(TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`))) / 60, 2) sched_duration_avg,
+    ROUND(AVG(TIME_TO_SEC(TIMEDIFF(
         DATE_ADD(
             IF(c2.`call_time` < c1.`call_time`, ADDDATE(d.`date`, 1), d.`date`),
             INTERVAL TIME_TO_SEC(c2.`call_time`) SECOND
         ),
         DATE_ADD(d.`date`, INTERVAL TIME_TO_SEC(c1.`call_time`) SECOND)
-    ))) / 60 avg_obs_dur,
+    ))) / 60, 2) avg_obs_dur,
     COUNT(IF(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`) < TIMEDIFF(c2.`call_time`, c1.`call_time`), 1, NULL)) /
         LEAST(COUNT(c2.`call_time`), COUNT(c1.`call_time`)) pct_late
 FROM `trips_gtfs` tg
@@ -54,4 +34,5 @@ WHERE
         INTERVAL TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`)) SECOND
     ))
     AND d.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND tg.`route_id` = @the_route
 GROUP BY 1, 3;
