@@ -3,6 +3,7 @@
 SELECT
     `route_id`,
     tg.`trip_headsign`,
+    day_period(TIME(c.call_time)) AS day_period,
     COUNT(IF(
         TIME_TO_SEC(TIMEDIFF(TIME(c.`call_time`), st.`time`)) <= 3 * 60,
         1, NULL
@@ -17,6 +18,10 @@ WHERE
     cg.`monday` = 1
     AND st.`stop_sequence` = 3
     AND c.`stop_sequence` = 3
-    AND DATE(c.call_time) BETWEEN '2015-10-01' AND '2015-10-31'
-GROUP BY `route_id`
+    AND DATE(c.call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND WEEKDAY(c.call_time) < 5
+    AND DATE(c.call_time) NOT IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30')
+GROUP BY
+    tg.route_id,
+    day_period(TIME(c.call_time))
 ORDER BY 3 DESC;

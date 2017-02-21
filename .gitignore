@@ -4,3 +4,5 @@ lookups
 gtfs
 *.qgs
 spacing
+evt
+on_time_departure

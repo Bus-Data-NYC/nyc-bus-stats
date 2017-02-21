@@ -19,7 +19,7 @@ SCHEDULE_FIELDS = date, \
 	pickups, \
 	exception
 
-.PHONY: all init mysql-calls-% bunch-%
+.PHONY: all init mysql-calls-% bunch-% otd-%
 
 all:
 
@@ -66,6 +66,11 @@ gtfs/gtfs_%/trips.csv: gtfs/gtfs_%/trips.txt
 gtfs/simplified_shapes.shp: gtfs/gtfs_nyct_bus_20150905/shapes.geojson gtfs/gtfs_mtabc_20150906/shapes.geojson
 	ogr2ogr -f 'ESRI Shapefile' -overwrite -simplify 0.01 $@ $<
 	ogr2ogr -f 'ESRI Shapefile' -update -append -simplify 0.01 $@ $(word 2,$^)
+
+# on time departure
+on_time_departure/%-otd.csv: sql/on_time_departure.sql | on_time_departure
+	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
+	$(MYSQL) > $@
 
 bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
@@ -123,4 +128,4 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/d
 		FIELDS TERMINATED BY '\t' \
 		(trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
 
-calls schedule trips:; mkdir -p $@
+calls schedule trips on_time_departure:; mkdir -p $@
