@@ -70,10 +70,9 @@ CREATE TABLE ewt_conservative (
     `rds_index` INTEGER NOT NULL,
     `trip_index` int(11) NOT NULL,
     `call_time` datetime NOT NULL,
-    `weekend` int(1) NOT NULL,
-    `period` int(1) NOT NULL,
-    `ewt` SMALLINT UNSIGNED NOT NULL,
-    KEY a (`trip_index`, `rds_index`, `call_time`)
+    `headway_sched` SMALLINT UNSIGNED NOT NULL,
+    `headway_obs` SMALLINT UNSIGNED NOT NULL,
+    KEY a (`rds_index`, `trip_index`, `call_time`)
 );
 
 -- conservative observed headways
@@ -82,14 +81,28 @@ SELECT
     o.`rds_index`,
     o.`trip_index`,
     o.`call_time`,
-    WEEKDAY(o.`call_time`) >= 5 OR 
-        DATE(o.`call_time`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
-    day_period(TIME(o.`call_time`)) period,
-    o.`headway` - g.`headway` AS `ewt`
+    g.headway AS headway_sched,
+    o.headway AS headway_obs
 FROM
     hw_observed_conservative o
     LEFT JOIN hw_gtfs g ON (g.`trip_index` = o.`trip_index` AND g.`rds_index` = o.`rds_index` AND DATE(o.`call_time`) = DATE(g.`datetime`))
     LEFT JOIN rds_indexes r ON (r.`rds_index` = o.`rds_index`)
 WHERE
-    YEAR(o.`call_time`) = YEAR(@the_month)
-    AND MONTH(o.`call_time`) = MONTH(@the_month);
+    o.`call_time` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH);
+
+CREATE TABLE cewt_avg AS SELECT
+    r.route,
+    day_period(a.call_time) period,
+    ROUND(AVG(a.headway_sched/60), 2) sched,
+    ROUND(AVG(a.headway_obs/60), 2) obs,
+    COUNT(IF(a.headway_obs > a.headway_sched, 1, NULL)) count_ewt,
+    ROUND(AVG(CAST(a.headway_obs - a.headway_sched AS SIGNED)), 2) ewt_avg
+FROM
+    `ewt_conservative` a
+    LEFT JOIN rds_indexes r ON (a.rds_index = r.rds_index)
+WHERE
+    DATE(a.call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND WEEKDAY(a.call_time) < 5
+GROUP BY 1, 2;
+
+ALTER TABLE `cewt_avg` ADD INDEX (`route`, `period`);
