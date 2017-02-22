@@ -1,3 +1,4 @@
+-- this is sqlite, not mysql
 CREATE TABLE stop_spacing AS
 WITH stop AS (
     SELECT stop_id id, ST_Point(stop_lon, stop_lat) geom FROM stops

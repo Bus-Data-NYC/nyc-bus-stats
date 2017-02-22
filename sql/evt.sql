@@ -24,7 +24,7 @@ SELECT
     tg.`route_id`,
     @the_month month,
     day_period(s1.`arrival_time`) period,
-    LEAST(COUNT(c2.`call_time`), COUNT(c1.`call_time`)) count_trips,
+    COUNT(*) count_trips,
     AVG(TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`))) / 60 sched_duration_avg,
     AVG(TIME_TO_SEC(TIMEDIFF(
         DATE_ADD(
@@ -34,7 +34,7 @@ SELECT
         DATE_ADD(d.`date`, INTERVAL TIME_TO_SEC(c1.`call_time`) SECOND)
     ))) / 60 avg_obs_dur,
     COUNT(IF(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`) < TIMEDIFF(c2.`call_time`, c1.`call_time`), 1, NULL)) /
-        LEAST(COUNT(c2.`call_time`), COUNT(c1.`call_time`)) pct_late
+        COUNT(*) pct_late
 FROM `trips_gtfs` tg
     LEFT JOIN `trip_indexes` t ON (t.`gtfs_trip` = tg.`trip_id`)
     LEFT JOIN `date_trips` d ON (d.`trip_index` = t.`trip_index`)
@@ -54,4 +54,6 @@ WHERE
         INTERVAL TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`)) SECOND
     ))
     AND d.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND s2.`arrival_time` IS NOT NULL
+    AND s1.`arrival_time` IS NOT NULL
 GROUP BY 1, 3;

@@ -24,7 +24,7 @@ ROUTES = Q110 Q111 Q112 Q113 Q114 Q64 QM21 S40 S46 S48 S51 S52 S53 S76 X10 S42 S
 MONTH = 2015-10-01
 
 evt/evt-$(MONTH).csv: $(foreach s,$(ROUTES),evt/$s.tsv)
-	csvstack $^ > $@
+	csvstack -t $^ > $@
 
 evts: $(foreach s,$(ROUTES),evt/$s.tsv)
 
