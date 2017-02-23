@@ -13,10 +13,11 @@ SELECT
         ),
         DATE_ADD(d.`date`, INTERVAL TIME_TO_SEC(c1.`call_time`) SECOND)
     ))) / 60, 2) duration_obs_avg,
+    count count_calls,
+    cewt.count_cewt / count pct_with_cewt
     cewt.sched sched_wait_avg,
     cewt.obs obs_wait_avg,
-    cewt.ewt_avg,
-    cewt.count_ewt
+    ROUND(cewt.ewt_avg / 60, 2) cewt_avg,
 FROM `trips_gtfs` tg
     LEFT JOIN `trip_indexes` t ON (t.`gtfs_trip` = tg.`trip_id`)
     LEFT JOIN `date_trips` d ON (d.`trip_index` = t.`trip_index`)

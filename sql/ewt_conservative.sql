@@ -90,12 +90,26 @@ FROM
 WHERE
     o.`call_time` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH);
 
-CREATE TABLE cewt_avg AS SELECT
+DROP TABLE IF EXISTS cewt_avg;
+CREATE TABLE cewt_avg (
+    `route` varchar(5),
+    `period` int(11) DEFAULT NULL,
+    `sched` decimal(7,2) DEFAULT NULL,
+    `obs` decimal(7,2) DEFAULT NULL,
+    `count` bigint(10) NOT NULL DEFAULT '0',
+    `count_cewt` bigint(10) NOT NULL DEFAULT '0',
+    `ewt_avg` decimal(8,2) DEFAULT NULL,
+    KEY `route` (`route`, `period`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+INSERT cewt_avg
+SELECT
     r.route,
     day_period(a.call_time) period,
     ROUND(AVG(a.headway_sched/60), 2) sched,
     ROUND(AVG(a.headway_obs/60), 2) obs,
-    COUNT(IF(a.headway_obs > a.headway_sched, 1, NULL)) count_ewt,
+    COUNT(*) count,
+    COUNT(IF(a.headway_obs > a.headway_sched, 1, NULL)) count_cewt,
     ROUND(AVG(CAST(a.headway_obs - a.headway_sched AS SIGNED)), 2) ewt_avg
 FROM
     `ewt_conservative` a
@@ -104,5 +118,3 @@ WHERE
     DATE(a.call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
     AND WEEKDAY(a.call_time) < 5
 GROUP BY 1, 2;
-
-ALTER TABLE `cewt_avg` ADD INDEX (`route`, `period`);
