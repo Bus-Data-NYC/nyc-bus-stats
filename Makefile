@@ -3,6 +3,8 @@ MYSQLFLAGS = -u $(USER) -p$(PASS)
 DATABASE = turnaround
 MYSQL = mysql $(DATABASE) $(MYSQLFLAGS)
 
+GTFSVERSION = 20150906
+
 CALL_FIELDS = vehicle_id, \
 	trip_index, \
 	stop_sequence, \
@@ -29,23 +31,19 @@ spacing/stop_spacing_avg.csv: spacing/stop_spacing.db sql/stop_spacing_avg.sql
 	FROM stop_spacing \
 	GROUP BY route, direction;' > $@
 
-spacing/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/gtfs_mtabc_20150906/stops.txt gtfs/gtfs_nyct_bus_20150905/stops.txt
+stats/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/$(GTFSVERSION)/stops.txt | stats
 	@rm -f $@
 	spatialite $@ ''
 	sqlite3 $@ 'CREATE TABLE rds_indexes (rds_index INTEGER, route VARCHAR, direction CHAR(1), stop_id INTEGER); \
 		CREATE TABLE stops (stop_id INTEGER, stop_name VARCHAR, stop_desc VARCHAR, stop_lat FLOAT, stop_lon FLOAT)';
 	sqlite3 -separator '	' $@ '.import $< rds_indexes'
-	sqlite3 -separator , $@ '.import gtfs/gtfs_mtabc_20150906/stops.txt stops'
-	csvcut -c stop_id,stop_name,stop_desc,stop_lat,stop_lon gtfs/gtfs_nyct_bus_20150905/stops.txt | \
-		sqlite3 -separator , $@ '.import /dev/stdin stops'
+	sqlite3 -separator , $@ '.import gtfs/$(GTFSVERSION)/stops.txt stops' 2> /dev/null
 	spatialite -header -csv $@ < sql/stop_spacing.sql
 
-gtfs/bus_route_ratios.csv: gtfs/bus_ratios_mtabc_20150906.csv gtfs/bus_ratios_nyct_bus_20150905.csv
-	csvstack $^ | \
-	sort -ru | \
-	csvsort -rc simple_ratio > $@
-
-gtfs/bus_ratios_%.csv: gtfs/gtfs_%/shapes.geojson gtfs/gtfs_%/trips.dbf gtfs/simplified_shapes.shp
+#
+# Route Ratios
+#
+stats/$(GTFSVERSION)_bus_ratios.csv: gtfs/$(GTFSVERSION)/shapes.geojson gtfs/$(GTFSVERSION)/trips.dbf | stats
 	@rm -f $@
 	ogr2ogr $@ $< -f CSV -overwrite -dialect sqlite \
 		-sql "SELECT DISTINCT t.route_id, shape.shape_id, service_id, \
@@ -53,9 +51,9 @@ gtfs/bus_ratios_%.csv: gtfs/gtfs_%/shapes.geojson gtfs/gtfs_%/trips.dbf gtfs/sim
 		ROUND(ST_Length(shape.Geometry, 1) / ST_Length(simp.Geometry, 1), 2) simple_ratio \
 		FROM OGRGeoJSON shape \
 		LEFT JOIN '$(word 2,$(^D))'.trips t ON (t.shape_id = shape.id) \
-		LEFT JOIN $(word 3,$(^D)).bus_shapes simp ON (simp.id = shape.id)"
+		SORT BY crow_ratio DESC"
 
-gtfs/gtfs_%/trips.dbf: gtfs/gtfs_%/trips.csv
+gtfs/$(GTFSVERSION)/trips.dbf: gtfs/$(GTFSVERSION)/trips.csv
 	ogr2ogr $@ $<
 
 gtfs/gtfs_%/trips.csv: gtfs/gtfs_%/trips.txt
@@ -63,9 +61,8 @@ gtfs/gtfs_%/trips.csv: gtfs/gtfs_%/trips.txt
 	csvgrep -c service_id -m Weekday | \
 	sort -ru > $@
 
-gtfs/simplified_shapes.shp: gtfs/gtfs_nyct_bus_20150905/shapes.geojson gtfs/gtfs_mtabc_20150906/shapes.geojson
-	ogr2ogr -f 'ESRI Shapefile' -overwrite -simplify 0.01 $@ $<
-	ogr2ogr -f 'ESRI Shapefile' -update -append -simplify 0.01 $@ $(word 2,$^)
+gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
+	node_modules/.bin/gtfs2geojson -o $(@D) $<
 
 # on time departure
 on_time_departure/%-otd.csv: sql/on_time_departure.sql | on_time_departure
@@ -129,3 +126,6 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/d
 		(trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
 
 calls schedule trips on_time_departure:; mkdir -p $@
+install:
+	pip install --user -r requirements.txt
+	npm i andrewharvey/gtfs2geojson
