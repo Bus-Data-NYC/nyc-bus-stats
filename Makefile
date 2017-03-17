@@ -4,6 +4,7 @@ DATABASE = turnaround
 MYSQL = mysql $(DATABASE) $(MYSQLFLAGS)
 
 GTFSVERSION = 20150906
+MONTH = 2015-10
 
 CALL_FIELDS = vehicle_id, \
 	trip_index, \
@@ -21,15 +22,41 @@ SCHEDULE_FIELDS = date, \
 	pickups, \
 	exception
 
-.PHONY: all init mysql-calls-% bunch-% otd-%
+.PHONY: all init mysql-calls mysql-calls-% bunch bunch-% \
+	otd otd-% evt evt-% spacing
 
 all:
 
-spacing/stop_spacing_avg.csv: spacing/stop_spacing.db sql/stop_spacing_avg.sql
+#
+# EVT (excess in-vehicle time)
+#
+
+ROUTES = $(shell cat routes.txt)
+routes = $(foreach s,$(ROUTES),stats/evt/$s.tsv)
+
+evt: stats/$(MONTH)-evt.csv
+
+stats/$(MONTH)-evt.csv: $(routes)
+	csvstack -t $^ > $@
+
+$(routes): stats/evt/%.tsv: sql/evt_route.sql | stats/evt
+	{ echo SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\; ; cat $^ ; } | \
+	$(MYSQL) > $@
+
+routes.txt: gtfs/$(GTFSVERSION)/routes.txt
+	csvcut -c 1 $< | tail -n+2 | sort -u | tr '\n' ' ' | fold -sw80 > $@
+
+#
+# Stop Spacing
+#
+
+spacing: stats/$(GTFSVERSION)_stop_spacing_avg.csv
+
+stats/$(GTFSVERSION)_stop_spacing_avg.csv: stats/stop_spacing.db
 	sqlite3 -csv -header $< 'SELECT route, direction, \
-	ROUND(SUM(spacing_m) / COUNT(*) - 1) avg_spacing_m \
-	FROM stop_spacing \
-	GROUP BY route, direction;' > $@
+		ROUND(SUM(spacing_m) / COUNT(*) - 1) avg_spacing_m \
+		FROM stop_spacing \
+		GROUP BY route, direction;' > $@
 
 stats/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/$(GTFSVERSION)/stops.txt | stats
 	@rm -f $@
@@ -56,29 +83,35 @@ stats/$(GTFSVERSION)_bus_ratios.csv: gtfs/$(GTFSVERSION)/shapes.geojson gtfs/$(G
 gtfs/$(GTFSVERSION)/trips.dbf: gtfs/$(GTFSVERSION)/trips.csv
 	ogr2ogr $@ $<
 
-gtfs/gtfs_%/trips.csv: gtfs/gtfs_%/trips.txt
-	csvcut -c route_id,service_id,shape_id $< | \
-	csvgrep -c service_id -m Weekday | \
-	sort -ru > $@
-
 gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
 	node_modules/.bin/gtfs2geojson -o $(@D) $<
 
+#
 # on time departure
-on_time_departure/%-otd.csv: sql/on_time_departure.sql | on_time_departure
+#
+otd: stats/$(MONTH)-otd.csv
+
+stats/$(MONTH)-otd.csv: sql/on_time_departure.sql | stats
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL) > $@
 
-bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
+#
+# Bus bunching
+#
+bunch: bunch-$(MONTH)
+
+bunch-$(MONTH): bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL)
 
-mysql-calls-%: calls/%.tsv
+mysql-calls: mysql-calls-$(MONTH)
+
+mysql-calls-$(MONTH): mysql-calls-%: calls/%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
-mysql-schedule-%: schedule/schedule_%.tsv
+mysql-schedule-$(MONTH): mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
@@ -125,7 +158,8 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/d
 		FIELDS TERMINATED BY '\t' \
 		(trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
 
-calls schedule trips on_time_departure:; mkdir -p $@
 install:
 	pip install --user -r requirements.txt
 	npm i andrewharvey/gtfs2geojson
+
+calls schedule trips stats stats/evt:; mkdir -p $@
