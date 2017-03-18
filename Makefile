@@ -34,8 +34,8 @@ SCHEDULE_FIELDS = date, \
 	pickups, \
 	exception
 
-.PHONY: all init mysql-calls mysql-calls-% bunch bunch-% \
-	otd otd-% evt evt-% spacing
+.PHONY: all init init-$(MONTH) mysql-calls mysql-calls-% mysql-schedule-% \
+	bunch otd evt routeratio spacing
 
 all:
 
@@ -57,6 +57,16 @@ $(routes): stats/evt/%.tsv: sql/evt_route.sql | stats/evt
 
 routes.txt: gtfs/$(GTFSVERSION)/routes.txt
 	csvcut -c 1 $< | tail -n+2 | sort -u | tr '\n' ' ' | fold -sw80 > $@
+
+#
+# Conservative EWT
+#
+cewt: stats/$(MONTH)-cewt.csv
+
+stats/$(MONTH)-cewt.csv: sql/ewt_conservative.sql
+	{ echo SET @the_month=\'$(MONTH)-01\'; ; cat $^ ; } | \
+	$(MYSQL)
+	$(MYSQL) -e "SELECT * FROM cewt_avg" > $@
 
 #
 # Stop Spacing
@@ -82,7 +92,9 @@ stats/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/$(GTFSV
 #
 # Route Ratios
 #
-stats/$(GTFSVERSION)_bus_ratios.csv: gtfs/$(GTFSVERSION)/shapes.geojson gtfs/$(GTFSVERSION)/trips.dbf | stats
+routeratio: stats/$(GTFSVERSION)-route-ratios.csv
+
+stats/$(GTFSVERSION)-route-ratios.csv: gtfs/$(GTFSVERSION)/shapes.geojson gtfs/$(GTFSVERSION)/trips.dbf | stats
 	@rm -f $@
 	ogr2ogr $@ $< -f CSV -overwrite -dialect sqlite \
 		-sql "SELECT DISTINCT t.route_id, shape.shape_id, service_id, \
@@ -103,27 +115,32 @@ gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
 #
 otd: stats/$(MONTH)-otd.csv
 
-stats/$(MONTH)-otd.csv: sql/on_time_departure.sql | stats
+stats/$(MONTH)-otd.csv: stats/%-otd.csv: sql/on_time_departure.sql | stats
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL) > $@
 
 #
 # Bus bunching
 #
-bunch: bunch-$(MONTH)
+bunch: stats/$(MONTH)-bunching.csv
 
-bunch-$(MONTH): bunch-%: sql/headway.sql sql/bunching_observed.sql sql/bunching_sched.sql
+stats/$(MONTH)-bunching.csv: sql/headway_observed.sql sql/headway_sched.sql sql/bunching.sql sql/bunching_average.sql
 	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
 	$(MYSQL)
+	$(MYSQL) -e "SELECT * FROM bunching_average" > $@
 
-mysql-calls: mysql-calls-$(MONTH)
+#
+# Insert calls data for a particular month
+#
+init-month: init-$(MONTH)
+init-$(MONTH): init-%: mysql-calls-% mysql-schedule-%
 
-mysql-calls-$(MONTH): mysql-calls-%: calls/%.tsv
+mysql-calls-%: calls/%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
 
-mysql-schedule-$(MONTH): mysql-schedule-%: schedule/schedule_%.tsv
+mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
