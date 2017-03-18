@@ -26,3 +26,8 @@ To specify a different database name:
 ```
 make mysql-calls-2015-10 DATABASE=mydatabase
 ```
+## License
+
+Copyright 2017 TransitCenter. Made available under the Apache 2.0 license.
+
+Developer: [Neil Freeman](http://fakeisthenewreal.org) [@fitnr](http://twitter.com/fitnr)
