@@ -41,7 +41,7 @@ FROM (
         o.`headway` headway_observed,
         g.`headway` headway_scheduled,
         WEEKDAY(o.`datetime`) >= 5 OR 
-            DATE(o.`datetime`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
+            DATE(o.`datetime`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30', '2016-12-24', '2016-12-25') AS weekend,
         day_period(TIME(o.`datetime`)) period
     FROM
         hw_observed o

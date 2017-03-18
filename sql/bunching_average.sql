@@ -5,7 +5,7 @@ SET @the_month = '2015-10-01';
 SET @the_period = 2;
 
 -- alternative approach: use the average headway to calculate bunching
-
+DROP TABLE IF EXISTS bunching_averaged;
 CREATE TABLE IF NOT EXISTS bunching_averaged (
   `month` date NOT NULL,
   `route` varchar(5),
