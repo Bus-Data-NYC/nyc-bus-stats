@@ -57,7 +57,7 @@ FROM (
             SELECT trip_index, rds_index, call_time, dwell_time FROM calls UNION
             SELECT trip_index, rds_index, datetime call_time, NULL dwell_time FROM missing_calls
         ) a
-        WHERE DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+        WHERE DATE(call_time) BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
         ORDER BY
             rds_index,
             depart_time(call_time, dwell_time) ASC
@@ -88,7 +88,7 @@ FROM
     LEFT JOIN hw_gtfs g ON (g.`trip_index` = o.`trip_index` AND g.`rds_index` = o.`rds_index` AND DATE(o.`call_time`) = DATE(g.`datetime`))
     LEFT JOIN rds_indexes r ON (r.`rds_index` = o.`rds_index`)
 WHERE
-    o.`call_time` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH);
+    o.`call_time` BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY);
 
 DROP TABLE IF EXISTS cewt_avg;
 CREATE TABLE cewt_avg (
@@ -115,6 +115,6 @@ FROM
     `ewt_conservative` a
     LEFT JOIN rds_indexes r ON (a.rds_index = r.rds_index)
 WHERE
-    DATE(a.call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    DATE(a.call_time) BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
     AND WEEKDAY(a.call_time) < 5
 GROUP BY 1, 2;

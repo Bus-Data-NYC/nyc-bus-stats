@@ -41,7 +41,7 @@ WHERE
         d.`date`,
         INTERVAL TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`)) SECOND
     ))
-    AND d.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND d.`date` BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
     AND tg.`route_id` = @the_route
     AND s2.`arrival_time` IS NOT NULL
     AND s1.`arrival_time` IS NOT NULL

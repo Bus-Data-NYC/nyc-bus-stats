@@ -35,7 +35,7 @@ FROM (
         @prev_depart := depart_time(call_time, dwell_time)
     FROM (
         SELECT * FROM calls
-        WHERE DATE(call_time) BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+        WHERE DATE(call_time) BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
         ORDER BY
             rds_index,
             depart_time(call_time, dwell_time) ASC

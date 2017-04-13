@@ -16,7 +16,7 @@ FROM trips_gtfs tg
     LEFT JOIN `calendar_gtfs` cg ON (cg.`service_id` = tg.`service_id`)
 WHERE
     `monday` = 1
-    AND cg.`start_date` <= DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND cg.`start_date` <= DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
     AND cg.`end_date` >= @the_month
 GROUP BY (tg.`trip_id`);
 
@@ -53,7 +53,7 @@ WHERE
         d.`date`,
         INTERVAL TIME_TO_SEC(TIMEDIFF(s2.`arrival_time`, s1.`arrival_time`)) SECOND
     ))
-    AND d.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+    AND d.`date` BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
     AND s2.`arrival_time` IS NOT NULL
     AND s1.`arrival_time` IS NOT NULL
 GROUP BY 1, 3;

@@ -31,7 +31,7 @@ SELECT trip_index, rds_index, call_time datetime, headway FROM (
             date_trips dt
             LEFT JOIN stop_times st USING (trip_index)
         WHERE
-            dt.`date` BETWEEN @the_month AND DATE_ADD(@the_month, INTERVAL 1 MONTH)
+            dt.`date` BETWEEN @the_month AND DATE_SUB(DATE_ADD(@the_month, INTERVAL 1 MONTH), INTERVAL 1 DAY)
             AND pickup_type != 1
         ORDER BY
             rds_index,
