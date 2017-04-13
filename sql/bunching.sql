@@ -5,19 +5,6 @@
 -- This is done in the Makefile. Uncomment if using the file directly.
 -- SET @the_month = '2015-10-01';
 
--- bunching table
-CREATE TABLE IF NOT EXISTS bunching (
-  `month` date NOT NULL,
-  `route_id` varchar(5),
-  `direction_id` char(1),
-  `stop_id` int(11),
-  `period` int(1) NOT NULL,
-  `weekend` int(1) NOT NULL,
-  `call_count` SMALLINT(21) NOT NULL,
-  `bunch_count` SMALLINT(21) NOT NULL,
-  KEY rds (route, direction, stop_id)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 -- join calls to hw_observed and hw_gtfs and compare
 -- 12 minutes
 INSERT INTO bunching

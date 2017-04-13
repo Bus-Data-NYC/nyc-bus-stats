@@ -129,6 +129,13 @@ CREATE TABLE IF NOT EXISTS schedule (
 -- same in the MTA's GTFS. Keep in mind that GTFS stop times can pass 24:00:00, so 
 -- a trip with a service date of 2016-01-01 and stop time of 24:01:00, for 
 -- example, will serve the stop at 2016-01-02 00:01:00.
+CREATE TABLE IF NOT EXISTS hw_observed (
+    `trip_index` int(11) NOT NULL,
+    `rds_index` INTEGER NOT NULL,
+    `datetime` datetime NOT NULL,
+    `headway` SMALLINT UNSIGNED NOT NULL,
+    PRIMARY KEY k (trip_index, rds_index, datetime)
+);
 
 -- "schedule" (schedule summaries) shows the number of scheduled buses (which 
 -- includes arrivals/drop off only) and number of scheduled pickups (which should 
@@ -136,6 +143,18 @@ CREATE TABLE IF NOT EXISTS schedule (
 -- (exception) indicating whether a route-stop-hour should be excepted from 
 -- measurement due to lack of data or a snowstorm/shutdown - this is the same 
 -- information as in the Exceptions table in the NYC Bus Performance Database.
+-- bunching table
+CREATE TABLE IF NOT EXISTS bunching (
+  `month` date NOT NULL,
+  `route_id` varchar(5),
+  `direction_id` char(1),
+  `stop_id` int(11),
+  `period` int(1) NOT NULL,
+  `weekend` int(1) NOT NULL,
+  `call_count` SMALLINT(21) NOT NULL,
+  `bunch_count` SMALLINT(21) NOT NULL,
+  KEY rds (route, direction, stop_id)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- All day is divided into five parts.
 DROP FUNCTION IF EXISTS day_period;

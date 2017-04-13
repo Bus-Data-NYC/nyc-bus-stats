@@ -6,15 +6,6 @@
 -- SET @the_month = '2015-10-01';
 
 -- find observed headways
-DROP TABLE IF EXISTS hw_observed;
-CREATE TABLE hw_observed (
-    `trip_index` int(11) NOT NULL,
-    `rds_index` INTEGER NOT NULL,
-    `datetime` datetime NOT NULL,
-    `headway` SMALLINT UNSIGNED NOT NULL,
-    KEY k (trip_index, rds_index, datetime)
-);
-
 SET @prev_rds = NULL;
 
 -- sort calls by route/direction/stop and departure time.
