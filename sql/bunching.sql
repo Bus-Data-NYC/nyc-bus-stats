@@ -24,7 +24,7 @@ FROM (
     SELECT
         o.`rds_index`,
         r.`route_id` AS route,
-        r.`direction`,
+        r.`direction_id` direction,
         r.`stop_id`,
         o.`datetime`,
         o.`headway` headway_observed,
@@ -36,13 +36,13 @@ FROM (
         LEFT JOIN hw_gtfs g ON (
           g.`trip_index` = o.`trip_index`
           AND g.`rds_index` = o.`rds_index`
-          AND DATE(o.`datetime`) = g.`date`
+          AND DATE(o.`datetime`) = DATE(g.`datetime`)
         )
         LEFT JOIN rds r ON (r.`rds_index` = o.`rds_index`)
-        LEFT JOIN ref_holidays h USING (date)
+        LEFT JOIN ref_holidays h ON (h.date = DATE(o.`datetime`))
     WHERE
         -- restrict to year-month in question
-        EXTRACT(YEAR_MONTH, o.`datetime`) = EXTRACT(YEAR_MONTH, @start_date)
+        EXTRACT(YEAR_MONTH from o.`datetime`) = EXTRACT(YEAR_MONTH from @start_date)
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;
