@@ -42,7 +42,8 @@ FROM (
         LEFT JOIN ref_holidays h ON (h.date = DATE(o.`datetime`))
     WHERE
         -- restrict to year-month in question
-        EXTRACT(YEAR_MONTH from o.`datetime`) = EXTRACT(YEAR_MONTH from @start_date)
+        o.`year` = YEAR(@start_date)
+        AND o.`month` = MONTH(@start_date)
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;

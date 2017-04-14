@@ -15,17 +15,19 @@ SET @prev_rds = NULL;
 -- 5-10 min for one month
 INSERT hw_observed
 SELECT
-    trip_index,
-    rds_index,
-    call_time,
+    `trip_index`,
+    `rds_index`,
+    `datetime`,
+    YEAR(`datetime`) AS year,
+    MONTH(`datetime`) AS month,
     headway
 FROM (
     SELECT
         trip_index,
         call_time,
         @headway := IF(`rds_index`=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_depart)), NULL) AS headway,
-        @prev_rds := rds_index,
-        @prev_depart := call_time
+        @prev_rds := rds_index AS rds_index,
+        @prev_depart := call_time AS datetime
     FROM (
         SELECT * FROM calls
         WHERE DATE(call_time) BETWEEN @start_date AND @end_date

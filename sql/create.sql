@@ -100,9 +100,11 @@ CREATE TABLE IF NOT EXISTS hw_observed (
     `trip_index` int(11) NOT NULL,
     `rds_index` INTEGER NOT NULL,
     `datetime` datetime NOT NULL,
+    `year` int(4) NOT NULL,
+    `month` int(2) NOT NULL,
     `headway` SMALLINT UNSIGNED DEFAULT NULL,
     KEY `trip-rds-date` (`trip_index`, `rds_index`, `datetime`),
-    INDEX datetime (`datetime`)
+    INDEX yearmonth (`year`, `month`)
 );
 
 -- "schedule" (schedule summaries) shows the number of scheduled buses (which 

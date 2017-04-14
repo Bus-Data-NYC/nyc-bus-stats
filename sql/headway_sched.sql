@@ -20,9 +20,8 @@ INSERT tmp_date_stop_times
         rds_index,
         trip_index,
         ADDTIME(dt.`date`, st.`departure_time`) call_time
-    FROM
-        ref_date_trips dt
-        LEFT JOIN ref_stop_times st USING (trip_index)
+    FROM ref_stop_times st
+        LEFT JOIN ref_date_trips dt USING (trip_index)
     WHERE
         dt.`date` BETWEEN @start_date AND @end_date
         AND pickup_type != 1;
