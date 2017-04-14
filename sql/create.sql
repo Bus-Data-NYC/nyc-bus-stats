@@ -77,11 +77,6 @@ CREATE TABLE IF NOT EXISTS calls (
 
 -- The additional schemas are:
 
-CREATE TABLE IF NOT EXISTS date_trips (
-    date date not null,
-    trip_index int not null,
-    PRIMARY KEY (date, trip_index)
-);
 
 CREATE TABLE IF NOT EXISTS schedule (
     date date not null,
@@ -93,14 +88,14 @@ CREATE TABLE IF NOT EXISTS schedule (
     PRIMARY KEY (date, rds_index, hour)
 );
 
--- "stop_times" includes both the original GTFS times and rounded times 
--- (time_public), since the times advertised at the bus stop are rounded to the 
--- nearest minute when compared to the contents of the MTA's GTFS stop_times.txt. 
--- I've used time_public when calculating metrics since that is the time presented 
--- to the rider. Note that published arrival and departure times are always the 
--- same in the MTA's GTFS. Keep in mind that GTFS stop times can pass 24:00:00, so 
--- a trip with a service date of 2016-01-01 and stop time of 24:01:00, for 
--- example, will serve the stop at 2016-01-02 00:01:00.
+CREATE TABLE IF NOT EXISTS hw_gtfs (
+  `trip_index` int(11) NOT NULL,
+  `rds_index` INTEGER NOT NULL,
+  `datetime` datetime NOT NULL,
+  `headway` MEDIUMINT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY k (trip_index, rds_index, datetime)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE IF NOT EXISTS hw_observed (
     `trip_index` int(11) NOT NULL,
     `rds_index` INTEGER NOT NULL,
