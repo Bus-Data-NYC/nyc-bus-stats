@@ -148,3 +148,18 @@ CREATE FUNCTION depart_time(call_time DATETIME, dwell_time INTEGER)
       NULL,
       IF(dwell_time > 0, TIMESTAMPADD(SECOND, dwell_time, call_time), call_time)
     );
+
+DROP PROCEDURE IF EXISTS add_dates;
+DELIMITER $$
+CREATE PROCEDURE add_dates(start_date DATE, end_date DATE)
+BEGIN
+    DROP TABLE IF EXISTS ref_dates;
+    CREATE TABLE ref_dates (date DATE);
+    label1: LOOP
+        INSERT into ref_dates VALUES (start_date);
+        SET start_date = DATE_ADD(start_date, INTERVAL 1 DAY);
+        IF start_date <= end_date THEN ITERATE label1; END IF;
+        LEAVE label1;
+    END LOOP label1;
+END $$
+DELIMITER ;
