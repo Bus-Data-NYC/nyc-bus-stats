@@ -100,8 +100,9 @@ CREATE TABLE IF NOT EXISTS hw_observed (
     `trip_index` int(11) NOT NULL,
     `rds_index` INTEGER NOT NULL,
     `datetime` datetime NOT NULL,
-    `headway` SMALLINT UNSIGNED NOT NULL,
-    PRIMARY KEY k (trip_index, rds_index, datetime)
+    `headway` SMALLINT UNSIGNED DEFAULT NULL,
+    KEY `trip-rds-date` (`trip_index`, `rds_index`, `datetime`),
+    INDEX datetime (`datetime`)
 );
 
 -- "schedule" (schedule summaries) shows the number of scheduled buses (which 
@@ -113,8 +114,21 @@ CREATE TABLE IF NOT EXISTS hw_observed (
 -- bunching table
 CREATE TABLE IF NOT EXISTS bunching (
   `month` date NOT NULL,
-  `route_id` varchar(5),
-  `direction_id` char(1),
+  `route` varchar(5),
+  `direction` char(1),
+  `stop_id` int(11),
+  `period` int(1) NOT NULL,
+  `weekend` int(1) NOT NULL,
+  `call_count` SMALLINT(21) NOT NULL,
+  `bunch_count` SMALLINT(21) NOT NULL,
+  KEY rds (route, direction, stop_id),
+  INDEX (month)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS bunching_averaged (
+  `month` date NOT NULL,
+  `route` varchar(5),
+  `direction` char(1),
   `stop_id` int(11),
   `period` int(1) NOT NULL,
   `weekend` int(1) NOT NULL,

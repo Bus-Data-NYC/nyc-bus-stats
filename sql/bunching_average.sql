@@ -1,28 +1,13 @@
--- Set to the first day of the month in question
-SET @the_month = '2015-10-01';
-
--- currently only looking at call times in period=2
-SET @the_period = 2;
-
--- alternative approach: use the average headway to calculate bunching
-DROP TABLE IF EXISTS bunching_averaged;
-CREATE TABLE IF NOT EXISTS bunching_averaged (
-  `month` date NOT NULL,
-  `route` varchar(5),
-  `direction` char(1),
-  `stop_id` int(11),
-  `period` int(1) NOT NULL,
-  `weekend` int(1) NOT NULL,
-  `call_count` SMALLINT(21) NOT NULL,
-  `bunch_count` SMALLINT(21) NOT NULL,
-  KEY rds (route, direction, stop_id)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+SELECT
+    start_date,
+    end_date
+FROM start_date INTO @start_date, @end_date;
 
 -- join observed headways to average headways
 INSERT INTO bunching_averaged
     (month, route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
-    @the_month month,
+    @start_date month,
     `route`,
     `direction`,
     `stop_id`,

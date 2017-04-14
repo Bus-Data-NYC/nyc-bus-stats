@@ -2,15 +2,17 @@
     Requires all of the tables in create.sql.
 */
 -- Set to the first day of the month in question
--- This is done in the Makefile. Uncomment if using the file directly.
--- SET @the_month = '2015-10-01';
+SELECT
+    start_date,
+    end_date
+FROM start_date INTO @start_date, @end_date;
 
 -- join calls to hw_observed and hw_gtfs and compare
--- 12 minutes
+-- 10-20 minutes
 INSERT INTO bunching
-    (month, route_id, direction_id, stop_id, period, weekend, call_count, bunch_count)
+    (month, route, direction, stop_id, period, weekend, call_count, bunch_count)
 SELECT
-    @the_month month,
+    @start_date month,
     `route`,
     `direction`,
     `stop_id`,
@@ -21,7 +23,7 @@ SELECT
 FROM (
     SELECT
         o.`rds_index`,
-        r.`route`,
+        r.`route_id` AS route,
         r.`direction`,
         r.`stop_id`,
         o.`datetime`,
