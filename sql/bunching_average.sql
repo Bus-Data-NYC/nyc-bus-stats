@@ -38,8 +38,7 @@ FROM (
         c.`call_time`,
         o.`headway` headway_observed,
         3600.0 / s.`pickups` headway_avg,
-        WEEKDAY(s.`date`) >= 5 OR 
-            DATE(c.`call_time`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30') AS weekend,
+        (WEEKDAY(o.`datetime`) >= 5 OR h.`holiday` IS NOT NULL) AS weekend,
         day_period(TIME(c.`call_time`)) AS period
     FROM
         calls c
@@ -50,12 +49,10 @@ FROM (
             AND s.`hour` = HOUR(c.`call_time`)
         )
         LEFT JOIN ref_rds r ON (r.`rds_index` = c.`rds_index`)
+        LEFT JOIN holidays h USING (date)
     WHERE
         -- restrict to year-month in question
-        YEAR(s.`date`) = YEAR(@the_month)
-        AND MONTH(s.`date`) = MONTH(@the_month)
-        -- currently only looking at call times in period=2
-        AND day_period(TIME(c.`call_time`)) = @the_period
+        EXTRACT(YEAR_MONTH, o.`datetime`) = EXTRACT(YEAR_MONTH, @start_date)
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;

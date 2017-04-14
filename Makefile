@@ -186,6 +186,8 @@ init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/d
 		-e "LOAD DATA LOCAL INFILE 'schedule/stop_times.tsv' INTO TABLE stop_times \
 		FIELDS TERMINATED BY '\t' \
 		(trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
+	$(MYSQL) --local-infile -e "LOAD DATA LOCAL INFILE 'data/holidays.csv' \
+    IGNORE INTO TABLE ref_holidays FIELDS TERMINATED BY ',' (date, holiday)"
 
 install:
 	pip install --user -r requirements.txt

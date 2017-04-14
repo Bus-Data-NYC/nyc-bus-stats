@@ -27,8 +27,7 @@ FROM (
         o.`datetime`,
         o.`headway` headway_observed,
         g.`headway` headway_scheduled,
-        WEEKDAY(o.`datetime`) >= 5 OR 
-            DATE(o.`datetime`) IN ('2015-12-24', '2015-12-25', '2016-01-01', '2016-02-15', '2016-05-30', '2016-12-24', '2016-12-25') AS weekend,
+        (WEEKDAY(o.`datetime`) >= 5 OR h.`holiday` IS NOT NULL) AS weekend,
         day_period(TIME(o.`datetime`)) period
     FROM
         hw_observed o
@@ -38,10 +37,10 @@ FROM (
           AND DATE(o.`datetime`) = g.`date`
         )
         LEFT JOIN rds r ON (r.`rds_index` = o.`rds_index`)
+        LEFT JOIN ref_holidays h USING (date)
     WHERE
         -- restrict to year-month in question
-        YEAR(o.`datetime`) = YEAR(@the_month)
-        AND MONTH(o.`datetime`) = MONTH(@the_month)
+        EXTRACT(YEAR_MONTH, o.`datetime`) = EXTRACT(YEAR_MONTH, @start_date)
 ) a
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;
