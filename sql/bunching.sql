@@ -37,7 +37,7 @@ FROM (
           AND g.`rds_index` = o.`rds_index`
           AND DATE(o.`datetime`) = g.`date`
         )
-        LEFT JOIN rds_indexes r ON (r.`rds_index` = o.`rds_index`)
+        LEFT JOIN rds r ON (r.`rds_index` = o.`rds_index`)
     WHERE
         -- restrict to year-month in question
         YEAR(o.`datetime`) = YEAR(@the_month)

@@ -49,7 +49,7 @@ FROM (
             AND s.`date` = DATE(c.`call_time`)
             AND s.`hour` = HOUR(c.`call_time`)
         )
-        LEFT JOIN rds_indexes r ON (r.`rds_index` = c.`rds_index`)
+        LEFT JOIN ref_rds r ON (r.`rds_index` = c.`rds_index`)
     WHERE
         -- restrict to year-month in question
         YEAR(s.`date`) = YEAR(@the_month)

@@ -12,7 +12,7 @@ FROM
     `trips_gtfs` tg 
     LEFT JOIN `calendar_gtfs` cg ON (tg.`service_id` = cg.`service_id`)
     LEFT JOIN `trip_indexes` t ON (t.`gtfs_trip` = tg.`trip_id`)
-    LEFT JOIN `stop_times` st ON (t.`trip_index` = st.`trip_index`)
+    LEFT JOIN `gtfs_stop_times` st ON (t.`trip_index` = st.`trip_index`)
     LEFT JOIN `calls` c ON (c.`trip_index` = t.`trip_index`)
 WHERE
     cg.`monday` = 1
