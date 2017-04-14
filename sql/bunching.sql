@@ -10,11 +10,11 @@ FROM start_date INTO @start_date, @end_date;
 -- join calls to hw_observed and hw_gtfs and compare
 -- 10-20 minutes
 INSERT INTO bunching
-    (month, route, direction, stop_id, period, weekend, call_count, bunch_count)
+    (month, route_id, direction_id, stop_id, period, weekend, call_count, bunch_count)
 SELECT
     @start_date month,
-    `route`,
-    `direction`,
+    `route_id`,
+    `direction_id`,
     `stop_id`,
     `period`,
     `weekend`,
@@ -23,8 +23,8 @@ SELECT
 FROM (
     SELECT
         o.`rds_index`,
-        r.`route_id` AS route,
-        r.`direction_id` direction,
+        r.`route_id`,
+        r.`direction_id`,
         r.`stop_id`,
         o.`datetime`,
         o.`headway` headway_observed,
