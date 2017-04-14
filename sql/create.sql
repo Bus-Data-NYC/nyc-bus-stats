@@ -1,19 +1,3 @@
-CREATE TABLE IF NOT EXISTS rds_indexes (
-  rds_index INTEGER NOT NULL,
-  route VARCHAR(5) NOT NULL,
-  direction CHAR(1) NOT NULL,
-  stop_id INTEGER NOT NULL,
-  PRIMARY KEY (rds_index),
-  KEY r (route, direction, stop_id)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS trip_indexes (
-  trip_index INT(11) NOT NULL,
-  gtfs_trip VARCHAR(64) DEFAULT NULL,
-  PRIMARY KEY (trip_index),
-  KEY gtfs_trip (gtfs_trip)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 -- From: Nathan Johnson
 
 -- So, at some point I did dump, compress, and upload some "calls" data - the inferred
@@ -92,18 +76,6 @@ CREATE TABLE IF NOT EXISTS calls (
 -- tsv.xz (again, for August 2014 to February 2016).
 
 -- The additional schemas are:
-
-CREATE TABLE IF NOT EXISTS stop_times (
-    trip_index int not null,
-    time time not null, 
-    time_public time not null,
-    stop_id int not null,
-    stop_sequence tinyint unsigned not null,
-    pickup_type tinyint not null,
-    drop_off_type tinyint not null, 
-    rds_index smallint unsigned not null,
-    PRIMARY KEY (trip_index, stop_sequence)
-);
 
 CREATE TABLE IF NOT EXISTS date_trips (
     date date not null,
