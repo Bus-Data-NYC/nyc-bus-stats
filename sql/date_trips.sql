@@ -28,7 +28,8 @@ INSERT IGNORE ref_date_trips (date, trip_index)
     -- Include exceptions that add service
     UNION
     SELECT date,
-        service_id
+        trip_index
     FROM gtfs_calendar_dates
+    JOIN ref_trips USING (service_id)
     WHERE exception_type = 1
         AND date BETWEEN @start_date AND @end_date;
