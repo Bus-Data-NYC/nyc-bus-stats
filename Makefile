@@ -128,7 +128,7 @@ bunch: stats/$(MONTH)-bunching.csv
 
 stats/$(MONTH)-bunching.csv: sql/date_trips.sql sql/headway_observed.sql sql/headway_sched.sql sql/bunching.sql
 	$(MYSQL) -e "DROP TABLE IF EXISTS start_date; CREATE TABLE start_date AS \
-		SELECT '$*-01' start_date, DATE_SUB(DATE_ADD('$*-01', INTERVAL 1 MONTH), INTERVAL 1 DAY) end_date;"
+		SELECT '$(MONTH)-01' start_date, ('$(MONTH)-01' + INTERVAL 1 MONTH - INTERVAL 1 DAY) end_date;"
 	cat $^ | $(MYSQL)
 	$(MYSQL) -Be "SELECT start_date FROM start_date INTO @start_date; \
 		SELECT * FROM bunching WHERE month = @start_date" > $@
