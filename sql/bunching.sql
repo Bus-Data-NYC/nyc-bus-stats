@@ -38,7 +38,7 @@ FROM (
           AND g.`rds_index` = o.`rds_index`
           AND DATE(o.`datetime`) = DATE(g.`datetime`)
         )
-        LEFT JOIN rds r ON (r.`rds_index` = o.`rds_index`)
+        LEFT JOIN ref_rds r ON (r.`rds_index` = o.`rds_index`)
         LEFT JOIN ref_holidays h ON (h.date = DATE(o.`datetime`))
     WHERE
         -- restrict to year-month in question
