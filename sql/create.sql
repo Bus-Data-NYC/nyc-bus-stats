@@ -156,6 +156,86 @@ CREATE TABLE IF NOT EXISTS adherence (
   PRIMARY KEY (date, rds_index, hour)
 ) ENGINE=MyISAM;
 
+CREATE TABLE IF NOT EXISTS perf_ewt (
+  month date not null,
+  route_id varchar(255) not null,
+  direction_id tinyint not null,
+  stop_id int not null,
+  weekend tinyint not null,
+  period tinyint not null,
+  scheduled_hf smallint not null,
+  wswt int not null,
+  observed_hf smallint not null,
+  wawt int not null,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)
+) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS perf_service (
+  month date not null, route_id varchar(255) not null,
+  direction_id tinyint not null,
+  stop_id int not null,
+  weekend tinyint not null,
+  period tinyint not null,
+  hours smallint not null,
+  scheduled smallint not null,
+  observed smallint not null,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)
+) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS perf_otp (
+  month date not null,
+  route_id varchar(255) not null,
+  direction_id tinyint not null,
+  stop_id int not null,
+  weekend tinyint not null,
+  period tinyint not null,
+  early smallint not null,
+  on_time smallint not null,
+  late smallint not null,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS perf_ewt (
+  month date not null,
+  route_id varchar(255) not null,
+  direction_id tinyint not null,
+  stop_id int not null,
+  weekend tinyint not null,
+  period tinyint not null,
+  scheduled_hf smallint not null,
+  wswt int not null,
+  observed_hf smallint not null,
+  wawt int not null,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS wtp (
+  date date,
+  rds_index int,
+  hours smallint,
+  w5 int not null,
+  w10 int not null,
+  w15 int not null,
+  w20 int not null,
+  w25 int not null,
+  w30 int not null,
+  PRIMARY KEY (date, rds_index, hour)
+) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS perf_wtp (
+  month date not null,
+  route_id varchar(255) not null,
+  direction_id tinyint not null,
+  stop_id int not null,
+  weekend tinyint not null,
+  period tinyint not null,
+  hours_hf smallint not null,
+  wtp_5 int not null,
+  wtp_10 int not null,
+  wtp_15 int not null,
+  wtp_20 int not null,
+  wtp_30 int not null,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)
+) ENGINE=MyISAM;
+
 -- All day is divided into five parts.
 DROP FUNCTION IF EXISTS day_period;
 CREATE FUNCTION day_period (d TIME)
