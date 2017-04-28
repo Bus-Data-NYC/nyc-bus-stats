@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS calls (
 -- The additional schemas are:
 
 
-CREATE TABLE IF NOT EXISTS schedule (
+CREATE TABLE IF NOT EXISTS schedule_hours (
     date date not null,
     rds_index smallint unsigned not null,
     hour tinyint not null,
@@ -138,6 +138,23 @@ CREATE TABLE IF NOT EXISTS bunching_averaged (
   `bunch_count` SMALLINT(21) NOT NULL,
   KEY rds (route, direction, stop_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS adherence (
+  date date not null,
+  rds_index smallint unsigned not null,
+  hour tinyint not null,
+  observed tinyint not null, -- observed pickups
+  early_5 tinyint not null,
+  early_2 tinyint not null,
+  early tinyint not null,
+  on_time tinyint not null,
+  late tinyint not null,
+  late_10 tinyint not null,
+  late_15 tinyint not null,
+  late_20 tinyint not null,
+  late_30 tinyint not null,
+  PRIMARY KEY (date, rds_index, hour)
+) ENGINE=MyISAM;
 
 -- All day is divided into five parts.
 DROP FUNCTION IF EXISTS day_period;
