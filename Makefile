@@ -69,6 +69,15 @@ stats/$(MONTH)-cewt.csv: sql/ewt_conservative.sql
 	$(MYSQL) -e "SELECT * FROM cewt_avg" > $@
 
 #
+# on time performance
+#
+otp-%: sql/schedule_hours.sql sql/otp.sql
+	$(MYSQL) -e "DROP TABLE IF EXISTS start_date; \
+		CREATE TABLE start_date AS \
+		SELECT '$*-01' start_date, DATE_SUB(DATE_ADD('$*-01', INTERVAL 1 MONTH), INTERVAL 1 DAY) end_date;"
+	cat $^ | $(MYSQL)
+
+#
 # Stop Spacing
 #
 
