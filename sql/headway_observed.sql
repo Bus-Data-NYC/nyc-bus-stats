@@ -10,18 +10,8 @@ FROM start_date INTO @start_date, @end_date;
 -- find observed headways
 SET @prev_rds = NULL;
 
--- sort calls by route/direction/stop and departure time.
--- Use variables to calculate headway between successive fields
--- 5-10 min for one month
-INSERT hw_observed
-SELECT
-    `trip_index`,
-    `rds_index`,
-    `datetime`,
-    YEAR(`datetime`) AS year,
-    MONTH(`datetime`) AS month,
-    headway
-FROM (
+DROP TABLE IF EXISTS hw_observed_raw;
+CREATE TEMPORARY TABLE hw_observed_raw AS
     SELECT
         trip_index,
         call_time,
@@ -35,5 +25,16 @@ FROM (
             rds_index,
             call_time ASC
     ) a
-) b;
 
+-- sort calls by route/direction/stop and departure time.
+-- Use variables to calculate headway between successive fields
+-- 5-10 min for one month
+INSERT hw_observed
+SELECT
+    `trip_index`,
+    `rds_index`,
+    `datetime`,
+    YEAR(`datetime`) AS year,
+    MONTH(`datetime`) AS month,
+    headway
+FROM hw_observed_raw;

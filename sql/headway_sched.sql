@@ -8,6 +8,7 @@ SELECT
     end_date
 FROM start_date INTO @start_date, @end_date;
 
+DROP TABLE IF EXISTS tmp_date_stop_times;
 CREATE TEMPORARY TABLE tmp_date_stop_times (
     `rds_index` INTEGER NOT NULL,
     `trip_index` int(11) NOT NULL,
@@ -26,16 +27,8 @@ INSERT tmp_date_stop_times
         dt.`date` BETWEEN @start_date AND @end_date
         AND pickup_type != 1;
 
-SET @prev_rds = NULL;
--- 10 mins
-REPLACE INTO hw_gtfs
-    (trip_index, rds_index, datetime, headway)
-SELECT
-    trip_index,
-    rds_index,
-    datetime,
-    headway
-FROM (
+DROP TABLE IF EXISTS headway_sched_raw;
+CREATE TEMPORARY TABLE headway_sched_raw AS
     SELECT
         trip_index,
         @headway := IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(datetime, @prev_time)), NULL) headway,
@@ -44,5 +37,16 @@ FROM (
     FROM tmp_date_stop_times
     ORDER BY
         rds_index,
-        datetime
-) a;
+        datetime;
+
+
+SET @prev_rds = NULL, @headway = NULL;
+-- 10 mins
+REPLACE INTO hw_gtfs
+    (trip_index, rds_index, datetime, headway)
+SELECT
+    trip_index,
+    rds_index,
+    datetime,
+    headway
+FROM headway_sched_raw;
