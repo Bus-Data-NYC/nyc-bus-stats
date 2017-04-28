@@ -1,164 +1,114 @@
-/* ewt.sql */
+SELECT
+  start_date, end_date
+FROM start_date INTO @start_date, @end_date;
 
-SET @start_date = '2015-05-01', @end_date = '2015-05-31';
-SET @max_int = POW(2,31)-1;
+CREATE temporary TABLE tmp_sh (
+  headway INT,
+  rds_index SMALLINT UNSIGNED,
+  date DATE,
+  hour TINYINT,
+  time DATETIME
+) ENGINE=MYISAM;
 
-/* Measure Scheduled Headways */
-SET
-    @prev_rds = NULL,
-    @prev_time = NULL;
+CREATE temporary TABLE tmp_ah (
+  headway INT,
+  rds_index SMALLINT UNSIGNED,
+  date DATE,
+  hour TINYINT,
+  time DATETIME
+) engine=myisam;
 
-DROP TABLE IF EXISTS tmp_sh;
-CREATE TABLE tmp_sh (
-    headway int,
-    rds smallint unsigned,
-    date date,
-    hour tinyint,
-    time datetime) ENGINE=MyISAM;
+CREATE temporary TABLE tmp_awt (
+  date DATE NOT NULL,
+  rds_index SMALLINT UNSIGNED NOT NULL,
+  hour TINYINT NOT NULL,
+  ah INT NOT NULL,
+  ah_sq INT NOT NULL,
+  PRIMARY KEY (date, rds_index, hour)
+) engine=myisam;
 
-INSERT tmp_sh
-    SELECT
-        @headway := IF(rds=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL),
-        @prev_rds := rds,
-        DATE(@mid := ADDTIME(@prev_time, SEC_TO_TIME(@headway / 2))),
-        HOUR(@mid),
-        @prev_time := call_time
-    FROM (
-        SELECT
-            rds,
-            ADDTIME(date, IF(date_offset < 1, departure_time, SUBTIME(departure_time, '24:00:00'))) AS call_time
-        FROM date_trips AS dt, stop_times AS st
-        WHERE date BETWEEN DATE_SUB(@start_date, INTERVAL 1 DAY)
-            AND DATE_ADD(@end_date, INTERVAL 1 DAY)
-            AND dt.trip_index = st.trip_index
-            AND pickup_type != 1
-            AND IF(date_offset < 1, departure_time, SUBTIME(departure_time, '24:00:00'))
-                BETWEEN '00:00:00' AND '23:59:59'
-    ) AS x
-    ORDER BY rds, call_time; -- 11m
+INSERT tmp_sh SELECT
+  @headway:=IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL),
+  @prev_rds:=rds_index,
+  DATE(@mid:=ADDTIME(@prev_time, SEC_TO_TIME(@headway / 2))),
+  HOUR(@mid),
+  @prev_time:=call_time
+FROM (
+  SELECT
+    rds_index,
+    ADDTIME(date, departure_time) AS call_time
+  FROM ref_date_trips AS dt
+    INNER JOIN ref_stop_times AS st USING (trip_index)
+  WHERE date BETWEEN DATE_SUB(@start_date, INTERVAL 1 DAY) AND DATE_ADD(@end_date, INTERVAL 1 DAY)
+    AND pickup_type != 1
+    AND date_offset < 1
+    AND departure_time BETWEEN '00:00:00' AND '23:59:59'
+) AS x
+ORDER BY rds_index, call_time;
 
 /* Measure Actual Headways */
-SET
-    @prev_rds = NULL,
-    @prev_time = NULL;
-DROP TABLE IF EXISTS tmp_ah;
-CREATE TABLE tmp_ah (
-    headway int,
-    rds smallint unsigned,
-    date date,
-    hour tinyint,
-    time datetime) ENGINE=MyISAM;
-
-INSERT tmp_ah
-    SELECT
-        @headway := IF(rds=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL),
-        @prev_rds := rds,
-        DATE(@mid := ADDTIME(@prev_time,SEC_TO_TIME(@headway/2))),
-        HOUR(@mid),
-        @prev_time := call_time
-    FROM calls
-    WHERE call_time BETWEEN DATE_SUB(CAST(@start_date AS DATETIME), INTERVAL 12 HOUR)
-        AND DATE_ADD(CAST(@end_date AS DATETIME), INTERVAL 36 HOUR)
-        AND dwell_time != -1
-    ORDER BY rds, call_time;   -- 7m
-
-/* Record Scheduled Wait Times */
-REPLACE ewt
-    SELECT date,
-        rds,
-        hour, -1 AS pickups,
-        SUM(headway) AS sh,
-        LEAST(SUM(headway*headway), @max_int) AS sh_sq,
-        NULL AS ah,
-        NULL AS ah_sq
-    FROM tmp_sh
-    WHERE date BETWEEN @start_date
-        AND @end_date
-        AND headway IS NOT NULL
-    GROUP BY date, rds, hour;    -- 16m
-
-UPDATE
-    ewt AS e,
-    schedule_hours AS sh
-    SET e.pickups = sh.pickups
-    WHERE e.date BETWEEN @start_date
-        AND @end_date
-        AND (e.date = sh.date AND e.rds = sh.rds AND e.hour = sh.hour);   -- 1m
-
-DELETE FROM ewt
-    WHERE date BETWEEN @start_date AND @end_date
-        AND pickups < 1;
+-- use headway_observed
 
 /* Record Actual Wait Times */
-DROP TABLE IF EXISTS tmp_awt;
-CREATE TABLE tmp_awt (
-    date date NOT NULL,
-    rds smallint unsigned NOT NULL,
-    hour tinyint NOT NULL,
-    ah int NOT NULL,
-    ah_sq int NOT NULL,
-    PRIMARY KEY (date, rds, hour)) ENGINE=MyISAM;
+-- 15m
+INSERT tmp_awt SELECT
+  date,
+  rds_index,
+  hour,
+  SUM(headway) AS ah,
+  LEAST(SUM(headway * headway), @max_int) AS ah_sq
+FROM headway_observed
+WHERE date BETWEEN @start_date AND @end_date
+  AND headway IS NOT NULL
+GROUP BY date,
+  rds_index,
+  hour;
 
-INSERT tmp_awt
-    SELECT
-        date,
-        rds,
-        hour,
-        SUM(headway) AS ah,
-        LEAST(SUM(headway*headway), @max_int) AS ah_sq
-    FROM tmp_ah
-    WHERE date BETWEEN @start_date AND @end_date
-        AND headway IS NOT NULL
-    GROUP BY date, rds, hour;    -- 15m
+/* Record Scheduled Wait Times */
+REPLACE ewt SELECT
+  date,
+  rds_index,
+  hour,
+  e.pickups AS scheduled,
+  SUM(headway) AS sh,
+  LEAST(SUM(headway * headway), @max_int) AS sh_sq,
+  GREATEST(a.observed, 0) AS observed,
+  COALESCE(a.ah, 30 * 60) AS ah,
+  COALESCE(
+    IF(a.ah_sq = @max_int, ROUND(SQRT(@max_int)), a.ah_sq),
+    (30 * 60) * (30 * 60) - 1 -- affects 0.007% of high frequency rds-datehours
+  ) AS ah_sq
+FROM tmp_sh
+    LEFT JOIN schedule_hours sh USING (date, rds_index, hour)
+    LEFT JOIN adherence a USING (date, rds_index, hour)
+    LEFT JOIN tmp_awt AS a USING (date, rds_index, hour)
+WHERE date BETWEEN @start_date AND @end_date
+   AND headway IS NOT NULL
+   AND scheduled >= 1
+GROUP BY date,
+    rds_index,
+    hour;
 
-UPDATE
-    ewt AS e
-        INNER JOIN tmp_awt AS a ON (e.date = a.date AND e.rds = a.rds AND e.hour = a.hour)
-    SET e.ah = a.ah,
-        e.ah_sq = a.ah_sq; -- 1m
+DROP TABLE tmp_awt, tmp_ah, tmp_sh;
 
--- affects 0.007% of high frequency rds-datehours :
-UPDATE ewt SET ah = 1800, ah_sq = 1800*1800-1 WHERE ah is NULL OR ah_sq is NULL;
-
--- affects 0.0006% of rds-datehours :
-UPDATE ewt SET ah = round(sqrt(@max_int)) WHERE ah_sq = @max_int;   
-
-REPLACE ewt_summary SELECT
-        CONCAT(YEAR(date),'-',LPAD(MONTH(date), 2, '0'),'-01') AS month,
-        route_id,
-        SUM(pickups),
-        SEC_TO_TIME(1/2*SUM(sh_sq)/SUM(sh)) AS swt,
-        SEC_TO_TIME(1/2*SUM(ah_sq)/SUM(ah)) AS awt,
-        -1 AS ewt
-    FROM ewt, rds
-    WHERE pickups >= 5
-        AND rds.rds=ewt.rds
-        AND date BETWEEN @start_date AND @end_date
-        AND route_id != 'B39'
-    GROUP BY EXTRACT(YEAR_MONTH FROM date), route_id;    -- 10s
-
-UPDATE ewt_summary
-    SET ewt = SUBTIME(awt, swt);
-
--- Get monthly weighted average for all routes:
-SELECT
-    month,
-    SUM(pickups),
-    SUM(pickups*TIME_TO_SEC(swt))/SUM(pickups)/60 AS swt_wa,
-    SUM(pickups*TIME_TO_SEC(awt))/SUM(pickups)/60 AS awt_wa,
-    SUM(pickups*TIME_TO_SEC(ewt))/SUM(pickups)/60 AS ewt_wa
-    FROM ewt_summary
-    GROUP BY month;
-
--- Get monthly weighted average for Manhattan:
-SELECT
-    month,
-    SUM(pickups),
-    SUM(pickups*TIME_TO_SEC(swt))/SUM(pickups)/60 AS swt_wa,
-    SUM(pickups*TIME_TO_SEC(awt))/SUM(pickups)/60 AS awt_wa,
-    SUM(pickups*TIME_TO_SEC(ewt))/SUM(pickups)/60 AS ewt_wa
-    FROM ewt_summary
-    WHERE LEFT(route_id, 1)='M'
-    GROUP BY month;
-
--- TODO Exclude M86/M86+ (crossover) from Sunday, June 28 to Wednesday, July 1, 2015.
+-- 1.5 million rows in 5 mins on xl
+INSERT perf_ewt
+  SELECT
+    @start_date AS month,
+    route_id
+    direction_id,
+    stop_id,
+    (WEEKDAY(`date`) >= 5 OR h.`holiday` IS NOT NULL) AS weekend,
+    day_period_hour(hour) AS period,
+    SUM(sh.pickups),
+    COALESCE(ROUND(SUM(sh.pickups * sh_sq / sh / 2)), 0),
+    COALESCE(SUM(ewt.observed), 0),
+    COALESCE(ROUND(SUM(ewt.observed * ah_sq / ah / 2)), 0)
+  FROM schedule_hours AS sh
+  LEFT JOIN ewt ON (sh.date = ewt.date AND sh.rds_index = ewt.rds_index AND sh.hour = ewt.hour)
+  LEFT JOIN ref_holidays h ON sh.date = h.date
+  JOIN ref_rds USING (rds_index);
+  WHERE sh.date BETWEEN @start_date AND @end_date
+    AND sh.pickups >= 5
+    AND NOT exception
+  GROUP BY rds_index, weekend, period;  

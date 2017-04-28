@@ -7,20 +7,8 @@ SELECT
     end_date
 FROM start_date INTO @start_date, @end_date;
 
--- join calls to hw_observed and hw_gtfs and compare
--- 10-20 minutes
-INSERT INTO bunching
-    (month, route_id, direction_id, stop_id, period, weekend, call_count, bunch_count)
-SELECT
-    @start_date month,
-    `route_id`,
-    `direction_id`,
-    `stop_id`,
-    `period`,
-    `weekend`,
-    COUNT(*) call_count,
-    COUNT(IF(headway_observed < headway_scheduled * 0.25, 1, NULL)) bunch_count
-FROM (
+DROP TABLE IF EXISTS bunching_raw
+CREATE TEMPORARY TABLE bunching_raw AS
     SELECT
         o.`rds_index`,
         r.`route_id`,
@@ -44,6 +32,21 @@ FROM (
         -- restrict to year-month in question
         o.`year` = YEAR(@start_date)
         AND o.`month` = MONTH(@start_date)
-) a
+
+
+-- join calls to hw_observed and hw_gtfs and compare
+-- 10-20 minutes
+INSERT INTO bunching
+    (month, route_id, direction_id, stop_id, period, weekend, call_count, bunch_count)
+SELECT
+    @start_date month,
+    `route_id`,
+    `direction_id`,
+    `stop_id`,
+    `period`,
+    `weekend`,
+    COUNT(*) call_count,
+    COUNT(IF(headway_observed < headway_scheduled * 0.25, 1, NULL)) bunch_count
+FROM bunching_results
 -- group by route, direction, stop, weekend/weekend and day period
 GROUP BY `rds_index`, `weekend`, `period`;
