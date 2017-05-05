@@ -45,7 +45,7 @@ UPDATE
     ref_stop_times st
     SET deviation = IF(
         TIME_TO_SEC(
-            @d := SUBTIME(TIME(call_time), IF(pickup_type = 1, arrival_time, departure_time))
+            @d := SUBTIME(TIME(convert_tz(call_time, 'EST', 'America/New_York')), IF(pickup_type = 1, arrival_time, departure_time))
         ) > @twelve_hours,
         TIME_TO_SEC(SUBTIME(@d, '24:00:00')),
         IF(
@@ -56,7 +56,7 @@ UPDATE
     )
     WHERE
         deviation = 555
-        AND call_time BETWEEN @start_date AND @end_date
+        AND convert_tz(call_time, 'EST', 'America/New_York') BETWEEN @start_date AND @end_date
         AND st.trip_index = c.trip_index
         AND st.stop_sequence = c.stop_sequence;
 
@@ -78,3 +78,4 @@ FROM calls
 WHERE call_time BETWEEN DATE_SUB(CAST(@start_date AS DATETIME), INTERVAL 2 HOUR) AND DATE_ADD(CAST(@end_date AS DATETIME), INTERVAL 2 HOUR)
 GROUP BY sched_date, sched_hour, rds_index
 HAVING sched_date BETWEEN @start_date AND @end_date;
+
