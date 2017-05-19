@@ -52,7 +52,7 @@ stats/$(MONTH)-evt.csv: $(routes)
 	csvstack -t $^ > $@
 
 $(routes): stats/evt/%.tsv: sql/evt_route.sql | stats/evt
-	{ echo SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\;" ; cat $^ ; } | \
 	$(MYSQL) > $@
 
 routes.txt: gtfs/$(GTFSVERSION)/routes.txt
@@ -64,7 +64,7 @@ routes.txt: gtfs/$(GTFSVERSION)/routes.txt
 cewt: stats/$(MONTH)-cewt.csv
 
 stats/$(MONTH)-cewt.csv: sql/ewt_conservative.sql
-	{ echo SET @the_month=\'$(MONTH)-01\'; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$(MONTH)-01\';" ; cat $^ ; } | \
 	$(MYSQL)
 	$(MYSQL) -e "SELECT * FROM cewt_avg" > $@
 
@@ -116,7 +116,7 @@ gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
 otd: stats/$(MONTH)-otd.csv
 
 stats/$(MONTH)-otd.csv: stats/%-otd.csv: sql/on_time_departure.sql | stats
-	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$*-01\'\;" ; cat $^ ; } | \
 	$(MYSQL) > $@
 
 #
@@ -125,7 +125,7 @@ stats/$(MONTH)-otd.csv: stats/%-otd.csv: sql/on_time_departure.sql | stats
 bunch: stats/$(MONTH)-bunching.csv
 
 stats/$(MONTH)-bunching.csv: sql/headway_observed.sql sql/headway_sched.sql sql/bunching.sql sql/bunching_average.sql
-	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$*-01\'\;" ; cat $^ ; } | \
 	$(MYSQL)
 	$(MYSQL) -e "SELECT * FROM bunching_average" > $@
 
