@@ -52,7 +52,7 @@ stats/$(MONTH)-evt.csv: $(routes)
 	csvstack -t $^ > $@
 
 $(routes): stats/evt/%.tsv: sql/evt_route.sql | stats/evt
-	{ echo SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\;" ; cat $^ ; } | \
 	$(MYSQL) > $@
 
 routes.txt: gtfs/$(GTFSVERSION)/routes.txt
@@ -64,7 +64,7 @@ routes.txt: gtfs/$(GTFSVERSION)/routes.txt
 cewt: stats/$(MONTH)-cewt.csv
 
 stats/$(MONTH)-cewt.csv: sql/ewt_conservative.sql
-	{ echo SET @the_month=\'$(MONTH)-01\'; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$(MONTH)-01\';" ; cat $^ ; } | \
 	$(MYSQL)
 	$(MYSQL) -e "SELECT * FROM cewt_avg" > $@
 
@@ -125,7 +125,7 @@ gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
 otd: stats/$(MONTH)-otd.csv
 
 stats/$(MONTH)-otd.csv: stats/%-otd.csv: sql/on_time_departure.sql | stats
-	{ echo SET @the_month=\'$*-01\'\; ; cat $^ ; } | \
+	{ echo "SET @the_month=\'$*-01\'\;" ; cat $^ ; } | \
 	$(MYSQL) > $@
 
 #
@@ -139,8 +139,7 @@ stats/$(MONTH)-bunching.csv: sql/date_trips.sql sql/headway_observed.sql sql/hea
 	$(MYSQL) -e "DROP TABLE IF EXISTS start_date; CREATE TABLE start_date AS \
 		SELECT '$(MONTH)-01' start_date, ('$(MONTH)-01' + INTERVAL 1 MONTH - INTERVAL 1 DAY) end_date;"
 	cat $^ | $(MYSQL)
-	$(MYSQL) -Be "SELECT start_date FROM start_date INTO @start_date; \
-		SELECT * FROM bunching WHERE month = @start_date" > $@
+	$(MYSQL) -Be "SELECT * FROM bunching WHERE month = (SELECT start_date FROM start_date)" > $@
 
 # Insert calls data for a particular month
 #
