@@ -24,4 +24,3 @@ GROUP BY
     rds_index,
     weekend,
     period;
-

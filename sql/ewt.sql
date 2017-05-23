@@ -33,7 +33,7 @@ CREATE temporary TABLE tmp_awt (
   PRIMARY KEY (date, rds_index, hour)
 ) engine=myisam;
 
-REPLACE tmp_sh SELECT
+INSERT tmp_sh SELECT
   @headway:=IF(rds_index=@prev_rds, TIME_TO_SEC(TIMEDIFF(call_time, @prev_time)), NULL),
   @prev_rds:=rds_index,
   DATE(@mid:=ADDTIME(@prev_time, SEC_TO_TIME(@headway / 2))),
