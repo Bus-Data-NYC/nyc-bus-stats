@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS bunching (
   `weekend` int(1) NOT NULL,
   `call_count` SMALLINT(21) NOT NULL,
   `bunch_count` SMALLINT(21) NOT NULL,
-  KEY rds (route, direction, stop_id),
+  KEY rds (route_id, direction_id, stop_id),
   INDEX (month)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -234,7 +234,7 @@ CREATE TABLE IF NOT EXISTS wtp (
   w20 int not null,
   w25 int not null,
   w30 int not null,
-  PRIMARY KEY (date, rds_index, hour)
+  PRIMARY KEY (date, rds_index, hours)
 ) ENGINE=MyISAM;
 
 CREATE TABLE IF NOT EXISTS perf_wtp (
