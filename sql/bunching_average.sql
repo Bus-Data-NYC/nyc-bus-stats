@@ -28,7 +28,7 @@ FROM (
     FROM
         calls c
         LEFT JOIN hw_observed o ON (o.`call_id` = c.`call_id`)
-        LEFT JOIN schedule s ON (
+        LEFT JOIN schedule_hours s ON (
             s.`rds_index` = c.`rds_index`
             AND s.`date` = DATE(c.`call_time`)
             AND s.`hour` = HOUR(c.`call_time`)
