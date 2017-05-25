@@ -77,6 +77,23 @@ CREATE TABLE IF NOT EXISTS calls (
 
 -- The additional schemas are:
 
+DROP TABLE IF EXISTS ref_holidays;
+CREATE TABLE `ref_holidays` (
+  `date` date NOT NULL,
+  `holiday` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`date`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+INSERT INTO `ref_holidays` (`date`, `holiday`)
+VALUES
+  ('2015-12-24','Christmas Eve'),
+  ('2015-12-25','Christmas'),
+  ('2016-01-01','New Years Day'),
+  ('2016-02-15','Presidents Day'),
+  ('2016-05-30','Memorial Day'),
+  ('2016-09-05','Labor Day'),
+  ('2016-12-16','Christmas (Observed)'),
+  ('2016-12-24','Christmas Eve');
 
 CREATE TABLE IF NOT EXISTS schedule_hours (
     date date not null,
