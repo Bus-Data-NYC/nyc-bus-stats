@@ -2,7 +2,7 @@
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at 
+# You may obtain a copy of the License at
 #   http://www.apache.org/licenses/LICENSE-2.0
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -153,7 +153,7 @@ mysql-calls-%: calls/%.tsv
 
 mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule \
+		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule_hour \
 		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
 
 .INTERMEDIARY: %.tsv
@@ -175,7 +175,7 @@ schedule/%.tsv.xz: | schedule
 schedule/schedule_%.tsv.xz: | schedule
 	curl -o $@ $(SERVER)/bus_schedule/$(word 1,$(subst -, ,$*))/schedule_$*.tsv.xz
 
-lookups/%.tsv.xz:
+lookups/%.tsv.xz: | lookups
 	curl -o $@ $(SERVER)/bus_calls/$*.tsv.xz
 
 init: sql/create.sql
@@ -187,4 +187,4 @@ install:
 	pip install --user -r requirements.txt
 	npm i andrewharvey/gtfs2geojson
 
-calls schedule trips stats stats/evt:; mkdir -p $@
+calls schedule trips stats stats/evt lookups:; mkdir -p $@

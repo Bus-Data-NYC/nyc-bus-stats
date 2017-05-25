@@ -56,22 +56,22 @@ CREATE TABLE IF NOT EXISTS calls (
 
 -- From: Nathan Johnson
 
--- I've uploaded all calls data (inferred actual stop/pass times) for August 2014 
--- through February 2016. The URLs to download the files are in the format 
+-- I've uploaded all calls data (inferred actual stop/pass times) for August 2014
+-- through February 2016. The URLs to download the files are in the format
 -- https://s3.amazonaws.com/data2.mytransit.nyc/bus_calls/YYYY/calls_YYYY-MM.tsv.xz
 
--- Since the calls data also includes deviations from schedule, that should be all 
--- that is needed to calculate terminal departure on time performance (OTP) 
--- (taking into consideration that OTP should not be measured using extrapolated 
+-- Since the calls data also includes deviations from schedule, that should be all
+-- that is needed to calculate terminal departure on time performance (OTP)
+-- (taking into consideration that OTP should not be measured using extrapolated
 -- times - indicated by source='S'/'E' in the calls tables).
 
--- To calculate the other metrics, a list of scheduled departures is required. 
--- This information can be gleaned from the MTA's published GTFS feeds (archived 
--- here and here). For your convenience, I've compiled and uploaded a complete 
--- list of scheduled stop times and a date-to-trip lookup table (derived from GTFS 
--- calendar files) covering the same period as the calls files. I've also uploaded 
--- a schedule summary per route-stop-hour for each month. The schedule summaries 
--- can be downloaded in the format 
+-- To calculate the other metrics, a list of scheduled departures is required.
+-- This information can be gleaned from the MTA's published GTFS feeds (archived
+-- here and here). For your convenience, I've compiled and uploaded a complete
+-- list of scheduled stop times and a date-to-trip lookup table (derived from GTFS
+-- calendar files) covering the same period as the calls files. I've also uploaded
+-- a schedule summary per route-stop-hour for each month. The schedule summaries
+-- can be downloaded in the format
 -- https://s3.amazonaws.com/data2.mytransit.nyc/bus_schedule/YYYY/schedule_YYYY-MM.
 -- tsv.xz (again, for August 2014 to February 2016).
 
@@ -124,11 +124,11 @@ CREATE TABLE IF NOT EXISTS hw_observed (
     INDEX yearmonth (`year`, `month`)
 );
 
--- "schedule" (schedule summaries) shows the number of scheduled buses (which 
--- includes arrivals/drop off only) and number of scheduled pickups (which should 
--- generally be used for calculating metrics). It also includes a boolean column 
--- (exception) indicating whether a route-stop-hour should be excepted from 
--- measurement due to lack of data or a snowstorm/shutdown - this is the same 
+-- "schedule" (schedule summaries) shows the number of scheduled buses (which
+-- includes arrivals/drop off only) and number of scheduled pickups (which should
+-- generally be used for calculating metrics). It also includes a boolean column
+-- (exception) indicating whether a route-stop-hour should be excepted from
+-- measurement due to lack of data or a snowstorm/shutdown - this is the same
 -- information as in the Exceptions table in the NYC Bus Performance Database.
 -- bunching table
 CREATE TABLE IF NOT EXISTS bunching (
@@ -282,7 +282,7 @@ CREATE FUNCTION day_period_hour (h INTEGER)
 DROP FUNCTION IF EXISTS depart_time;
 CREATE FUNCTION depart_time(call_time DATETIME, dwell_time INTEGER)
     RETURNS DATETIME DETERMINISTIC
-    RETURN IF(dwell_time IS NULL, 
+    RETURN IF(dwell_time IS NULL,
       NULL,
       IF(dwell_time > 0, TIMESTAMPADD(SECOND, dwell_time, call_time), call_time)
     );
