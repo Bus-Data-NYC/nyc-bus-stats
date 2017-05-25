@@ -178,30 +178,10 @@ schedule/schedule_%.tsv.xz: | schedule
 lookups/%.tsv.xz: | lookups
 	curl -o $@ $(SERVER)/bus_calls/$*.tsv.xz
 
-# init: sql/create.sql
-# 	$(MYSQL) < $<
-# 	$(MYSQL) --local-infile -e "LOAD DATA LOCAL INFILE 'data/holidays.csv' \
-#     IGNORE INTO TABLE ref_holidays FIELDS TERMINATED BY ',' (date, holiday)"
-
-init: sql/create.sql lookups/rds_indexes.tsv lookups/trip_indexes.tsv schedule/date_trips.tsv schedule/stop_times.tsv
-		 $(MYSQL) < $<
-
-		 $(MYSQL) --local-infile \
-			 -e "LOAD DATA LOCAL INFILE 'lookups/rds_indexes.tsv' INTO TABLE rds_indexes \
-			 FIELDS TERMINATED BY '\t' (rds_index, route, direction, stop_id)"
-
-		 $(MYSQL) --local-infile \
-			 -e "LOAD DATA LOCAL INFILE 'lookups/trip_indexes.tsv' INTO TABLE trip_indexes \
-			 FIELDS TERMINATED BY '\t' (trip_index, gtfs_trip)"
-
-		 $(MYSQL) --local-infile \
-			 -e "LOAD DATA LOCAL INFILE 'schedule/date_trips.tsv' INTO TABLE date_trips \
-			 FIELDS TERMINATED BY '\t' (date, trip_index)"
-
-		 $(MYSQL) --local-infile \
-			 -e "LOAD DATA LOCAL INFILE 'schedule/stop_times.tsv' INTO TABLE stop_times \
-			 FIELDS TERMINATED BY '\t' \
-			 (trip_index, time, time_public, stop_id, stop_sequence, pickup_type, drop_off_type, rds_index)"
+init: sql/create.sql
+	$(MYSQL) < $<
+	$(MYSQL) --local-infile -e "LOAD DATA LOCAL INFILE 'data/holidays.csv' \
+    IGNORE INTO TABLE ref_holidays FIELDS TERMINATED BY ',' (date, holiday)"
 
 install:
 	pip install --user -r requirements.txt
