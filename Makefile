@@ -146,10 +146,15 @@ stats/$(MONTH)-bunching.csv: sql/date_trips.sql sql/headway_observed.sql sql/hea
 init-month: init-$(MONTH)
 init-$(MONTH): init-%: mysql-calls-% mysql-schedule-%
 
+# mysql-calls-%: calls/%.tsv
+# 	$(MYSQL) --local-infile \
+# 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
+# 		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
+
 mysql-calls-%: calls/%.tsv
 	$(MYSQL) --local-infile \
 		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
-		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
+		FIELDS TERMINATED BY '\t'"
 
 mysql-schedule-%: schedule/schedule_%.tsv
 	$(MYSQL) --local-infile \
