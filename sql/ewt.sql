@@ -1,3 +1,7 @@
+-- ewt
+-- scheduled and actual wait times
+
+
 SELECT
   start_date, end_date
 FROM start_date INTO @start_date, @end_date;
@@ -57,7 +61,7 @@ ORDER BY rds_index, call_time;
 /* Record Actual Wait Times */
 -- 15m
 INSERT tmp_awt SELECT
-  STR_TO_DATE(CONCAT(YEAR, month, '01'), '%Y%m%d') AS date,
+  date,
   rds_index,
   HOUR(datetime),
   SUM(headway) AS ah,
@@ -66,8 +70,7 @@ FROM hw_observed
 WHERE year BETWEEN YEAR(@start_date) AND YEAR(@end_date)
   AND month BETWEEN MONTH(@start_date) AND MONTH(@end_date) 
   AND headway IS NOT NULL
-GROUP BY year,
-  month,
+GROUP BY date,
   rds_index,
   HOUR(datetime);
 

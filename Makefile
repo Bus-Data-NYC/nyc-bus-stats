@@ -10,78 +10,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SERVER = https://s3.amazonaws.com/data2.mytransit.nyc
-MYSQLFLAGS = -u $(USER) -p$(PASS)
-DATABASE = turnaround
-MYSQL = mysql $(DATABASE) $(MYSQLFLAGS)
+DATABASE = nycbus
+PFLAGS =
+PSQL = psql $(DATABASE) $(PFLAGS)
 
-GTFSVERSION = 20150906
-MONTH = 2015-10
+GTFSSTATS = routeratio stopspacing 
+CALLSTATS = evt cewt otp otd bunching service speed
 
-CALL_FIELDS = vehicle_id, \
-	trip_index, \
-	stop_sequence, \
-	call_time, \
-	dwell_time, \
-	source, \
-	rds_index, \
-	deviation
+MONTH = 2016-10-01
+FEED = 1
 
-SCHEDULE_FIELDS = date, \
-	rds_index, \
-	hour, \
-	scheduled, \
-	pickups, \
-	exception
-
-.PHONY: all init init-$(MONTH) mysql-calls mysql-calls-% mysql-schedule-% \
-	bunch otd evt routeratio spacing
+.PHONY: all init $(CALLSTATS) $(GTFSSTATS)
 
 all:
 
 #
-# EVT (excess in-vehicle time)
+# Call-based stats
 #
+$(CALLSTATS): %: stats/$(MONTH)-%.csv.gz
 
-ROUTES = $(shell cat routes.txt)
-routes = $(foreach s,$(ROUTES),stats/evt/$s.tsv)
-
-evt: stats/$(MONTH)-evt.csv
-
-stats/$(MONTH)-evt.csv: $(routes)
-	csvstack -t $^ > $@
-
-$(routes): stats/evt/%.tsv: sql/evt_route.sql | stats/evt
-	{ echo "SET @the_month=\'$(MONTH)-01\', @the_route=\'$*\'\;" ; cat $^ ; } | \
-	$(MYSQL) > $@
-
-routes.txt: gtfs/$(GTFSVERSION)/routes.txt
-	csvcut -c 1 $< | tail -n+2 | sort -u | tr '\n' ' ' | fold -sw80 > $@
+$(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.csv.gz): stats/$(MONTH)-%.csv.gz: | stats
+	$(PSQL) -c "INSERT INTO stat_$* get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
+	$(PSQL) -c "SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date" | gzip - > $@
 
 #
-# Conservative EWT
+# Feed-based stats
 #
-cewt: stats/$(MONTH)-cewt.csv
-
-stats/$(MONTH)-cewt.csv: sql/ewt_conservative.sql
-	{ echo "SET @the_month=\'$(MONTH)-01\';" ; cat $^ ; } | \
-	$(MYSQL)
-	$(MYSQL) -e "SELECT * FROM cewt_avg" > $@
-
-#
-# on time performance
-#
-otp-%: sql/schedule_hours.sql sql/otp.sql
-	$(MYSQL) -e "DROP TABLE IF EXISTS start_date; \
-		CREATE TABLE start_date AS \
-		SELECT '$*-01' start_date, DATE_SUB(DATE_ADD('$*-01', INTERVAL 1 MONTH), INTERVAL 1 DAY) end_date;"
-	cat $^ | $(MYSQL)
-
-#
-# Stop Spacing
-#
-
-spacing: stats/$(GTFSVERSION)_stop_spacing_avg.csv
+$(GTFSSTATS): %: stats/$(FEED)-%.csv.gz
 
 stats/$(GTFSVERSION)_stop_spacing_avg.csv: stats/stop_spacing.db
 	sqlite3 -csv -header $< 'SELECT route, direction, \
@@ -98,93 +53,11 @@ stats/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/$(GTFSV
 	sqlite3 -separator , $@ '.import gtfs/$(GTFSVERSION)/stops.txt stops' 2> /dev/null
 	spatialite -header -csv $@ < sql/stop_spacing.sql
 
-#
-# Route Ratios
-#
-routeratio: stats/$(GTFSVERSION)-route-ratios.csv
+sql = sql/schema.sql \
+	sql/functions.sql \
+	$(foreach x,$(CALLSTATS) $(GTFSSTATS),sql/$x.sql)
 
-stats/$(GTFSVERSION)-route-ratios.csv: gtfs/$(GTFSVERSION)/shapes.geojson gtfs/$(GTFSVERSION)/trips.dbf | stats
-	@rm -f $@
-	ogr2ogr $@ $< -f CSV -overwrite -dialect sqlite \
-		-sql "SELECT DISTINCT t.route_id, shape.shape_id, service_id, \
-		ROUND(ST_Length(shape.Geometry, 1) / ST_Distance(StartPoint(shape.Geometry), EndPoint(shape.Geometry), 1), 2) crow_ratio, \
-		ROUND(ST_Length(shape.Geometry, 1) / ST_Length(simp.Geometry, 1), 2) simple_ratio \
-		FROM OGRGeoJSON shape \
-		LEFT JOIN '$(word 2,$(^D))'.trips t ON (t.shape_id = shape.id) \
-		SORT BY crow_ratio DESC"
+init: $(sql)
+	$(PSQL) $(foreach x,$^,-f $x)
 
-gtfs/$(GTFSVERSION)/trips.dbf: gtfs/$(GTFSVERSION)/trips.csv
-	ogr2ogr $@ $<
-
-gtfs/$(GTFSVERSION)/shapes.geojson: gtfs/$(GTFSVERSION)
-	node_modules/.bin/gtfs2geojson -o $(@D) $<
-
-#
-# on time departure
-#
-otd: stats/$(MONTH)-otd.csv
-
-stats/$(MONTH)-otd.csv: stats/%-otd.csv: sql/on_time_departure.sql | stats
-	{ echo "SET @the_month=\'$*-01\'\;" ; cat $^ ; } | \
-	$(MYSQL) > $@
-
-#
-# Bus bunching
-#
-bunch: stats/$(MONTH)-bunching.csv
-
-# To Do: change all these to stored procedures
-
-stats/$(MONTH)-bunching.csv: sql/date_trips.sql sql/headway_observed.sql sql/headway_sched.sql sql/bunching.sql
-	$(MYSQL) -e "DROP TABLE IF EXISTS start_date; CREATE TABLE start_date AS \
-		SELECT '$(MONTH)-01' start_date, ('$(MONTH)-01' + INTERVAL 1 MONTH - INTERVAL 1 DAY) end_date;"
-	cat $^ | $(MYSQL)
-	$(MYSQL) -Be "SELECT * FROM bunching WHERE month = (SELECT start_date FROM start_date)" > $@
-
-# Insert calls data for a particular month
-#
-init-month: init-$(MONTH)
-init-$(MONTH): init-%: mysql-calls-% mysql-schedule-%
-
-mysql-calls-%: calls/%.tsv
-	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE calls \
-		FIELDS TERMINATED BY '\t' ($(CALL_FIELDS))"
-
-mysql-schedule-%: schedule/schedule_%.tsv
-	$(MYSQL) --local-infile \
-		-e "LOAD DATA LOCAL INFILE '$(<)' INTO TABLE schedule \
-		FIELDS TERMINATED BY '\t' ($(SCHEDULE_FIELDS))"
-
-.INTERMEDIARY: %.tsv
-
-%.tsv: %.tsv.xz; unxz $<
-
-.PRECIOUS: calls/%.tsv.xz schedule/%.tsv.xz
-
-# Calls data available for 2014-08 to 2016-02
-# format: $(SERVER)/bus_calls/YYYY/calls_YYYY-MM.tsv.xz
-calls/%.tsv.xz: | calls
-	curl -o $@ $(SERVER)/bus_calls/$(word 1,$(subst -, ,$*))/calls_$*.tsv.xz
-
-schedule/%.tsv.xz: | schedule
-	curl -o $@ $(SERVER)/bus_schedule/$*.tsv.xz
-
-# Schedules available for 2014-08 to 2016-02
-# format: $(SERVER)/bus_schedule/YYYY/schedule_YYYY-MM.tsv.xz
-schedule/schedule_%.tsv.xz: | schedule
-	curl -o $@ $(SERVER)/bus_schedule/$(word 1,$(subst -, ,$*))/schedule_$*.tsv.xz
-
-lookups/%.tsv.xz:
-	curl -o $@ $(SERVER)/bus_calls/$*.tsv.xz
-
-init: sql/create.sql
-	$(MYSQL) < $<
-	$(MYSQL) --local-infile -e "LOAD DATA LOCAL INFILE 'data/holidays.csv' \
-    IGNORE INTO TABLE ref_holidays FIELDS TERMINATED BY ',' (date, holiday)"
-
-install:
-	pip install --user -r requirements.txt
-	npm i andrewharvey/gtfs2geojson
-
-calls schedule trips stats stats/evt:; mkdir -p $@
+stats: ; mkdir -p $@
