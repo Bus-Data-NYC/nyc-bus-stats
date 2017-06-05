@@ -6,15 +6,11 @@ Calculate certain statistics on New York City bus calls data.
 
 * bash or another *nix shell
 * Make
-* MySQL
-* [csvkit](https://github.com/wireservice/csvkit)
-* SQLite and Spatialite (for stop spacing)
-* GDAL/OGR (for route length ratios)
-* [gtfs2geojson](https://github.com/andrewharvey/gtfs2geojson)
+* Postgres
 
 ## Organization and syntax
 
-This repo uses a Makefile to organize the tasks that go into performing different statistics. Most of the actual calculations are done by MySQL or SQLite. 
+This repo uses a Makefile to organize the tasks that go into performing different statistics. The actual calculations are done by the Postgres server.
 
 ### Learn just enough make in 144 words
 
@@ -38,38 +34,12 @@ make init USER=myusername
 make init DATABASE=mydatabase
 make init USER=myusername PASS=mypassword
 ```
-(MySQL will warn you if you use your password this way, but it will save you time. Don't do this if you use your MySQL password for any other accounts.)
 
-This sets up the MySQL database and downloads stop and trip data into it:
+This sets up the Postgres database and downloads stop and trip data into it:
 ```
 make init
 ```
 
-This command will attempt to download the following from `https://s3.amazonaws.com/data2.mytransit.nyc`:
-````
-lookups/rds_indexes.tsv
-lookups/trip_indexes.tsv
-schedule/date_trips.tsv
-schedule/stop_times.tsv
-````
-
-Load calls for a specific month into the MySQL database with:
-`make init-month MONTH=2015-10`
-
-This will attempt to download that month's calls data from `https://s3.amazonaws.com/data2.mytransit.nyc`.
-
-### GTFS
-
-The `gtfs.mk` Makefile will download the current MTA bus GTFS files, merge them, and place them in a folder called `gtfs/yyymmdd/`, where `yyymmdd` reflects the current date. This date string is the `GTFSVERSION`, and can be set in other commands to specify a particular version of GTFS data.
-
-It's important to note that the MTA GTFS data includes six sets of files: one for each borough and the MTA Bus Company. Some archived versions of the GTFS data combine these into two sets of files (NYCT Bus and the Bus Co.).
-
-The `gtfs.mk` file has a task for combining sets of files like this. Let's say that the files are in two zip archives named `gtfs_busco_20150906.zip` and `gtfs_nyct_20150906.zip`. Place them in `gtfs/20150906` and run:
-```
-make -f gtfs.mk GTFSES="gtfs_busco_20150906 gtfs_nyct_20150906" GTFSVERSION=20161020`
-```
-
-Processing the GTFS can be somewhat slow. Because the MTA doesn't release the NYCT Bus and Bus Company files with the same column layout, they are combined with `csvkit`, which is less efficient than standard shell tools.
 
 ## Statistics
 
