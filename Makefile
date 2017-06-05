@@ -14,7 +14,7 @@ DATABASE = nycbus
 PFLAGS =
 PSQL = psql $(DATABASE) $(PFLAGS)
 
-GTFSSTATS = routeratio stopspacing 
+GTFSSTATS = routeratio spacing stopdist
 CALLSTATS = evt cewt otp otd bunching service speed
 
 MONTH = 2016-10-01
@@ -38,20 +38,10 @@ $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.csv.gz): stats/$(MONTH)-%.csv.gz: | s
 #
 $(GTFSSTATS): %: stats/$(FEED)-%.csv.gz
 
-stats/$(GTFSVERSION)_stop_spacing_avg.csv: stats/stop_spacing.db
-	sqlite3 -csv -header $< 'SELECT route, direction, \
-		ROUND(SUM(spacing_m) / COUNT(*) - 1) avg_spacing_m \
-		FROM stop_spacing \
-		GROUP BY route, direction;' > $@
+$(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.csv.gz): stats/$(FEED)-%.csv.gz: | stats
+	$(PSQL) -c "INSERT INTO stat_$* get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
+	$(PSQL) -c "SELECT * FROM stat_$* WHERE feed_index = string_to_array('$(FEED)', '-')" | gzip - > $@
 
-stats/stop_spacing.db: lookups/rds_indexes.tsv sql/stop_spacing.sql gtfs/$(GTFSVERSION)/stops.txt | stats
-	@rm -f $@
-	spatialite $@ ''
-	sqlite3 $@ 'CREATE TABLE rds_indexes (rds_index INTEGER, route VARCHAR, direction CHAR(1), stop_id INTEGER); \
-		CREATE TABLE stops (stop_id INTEGER, stop_name VARCHAR, stop_desc VARCHAR, stop_lat FLOAT, stop_lon FLOAT)';
-	sqlite3 -separator '	' $@ '.import $< rds_indexes'
-	sqlite3 -separator , $@ '.import gtfs/$(GTFSVERSION)/stops.txt stops' 2> /dev/null
-	spatialite -header -csv $@ < sql/stop_spacing.sql
 
 sql = sql/schema.sql \
 	sql/functions.sql \
