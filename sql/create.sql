@@ -77,6 +77,11 @@ CREATE TABLE IF NOT EXISTS calls (
 
 -- The additional schemas are:
 
+CREATE TABLE IF NOT EXISTS ref_date_trips (
+  date date not null,
+  trip_index not null
+);
+
 DROP TABLE IF EXISTS ref_holidays;
 CREATE TABLE `ref_holidays` (
   `date` date NOT NULL,
