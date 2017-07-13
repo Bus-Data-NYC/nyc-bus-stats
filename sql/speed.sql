@@ -29,7 +29,7 @@ CREATE TEMPORARY TABLE perf_speed_raw AS
         @prev_trip:=c.trip_index trip_index,
         @prev_seq:=stop_sequence s0
     FROM (
-        SELECT * FROM calls101
+        SELECT * FROM calls
         WHERE
             call_time BETWEEN DATE_SUB(@start_date, INTERVAL 1 HOUR) AND DATE_ADD(@end_date, INTERVAL 25 HOUR)
             ORDER BY

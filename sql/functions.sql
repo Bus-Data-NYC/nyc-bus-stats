@@ -19,8 +19,8 @@ LANGUAGE SQL IMMUTABLE;
 -- give an interval in the number of elapsed minutes
 CREATE OR REPLACE FUNCTION minutes(interval)
     RETURNS integer AS $$
-        SELECT (DATE_PART('day', $1) * 24 + DATE_PART('hour', $1)) * 60 + DATE_PART('minute', $1) +
-        CASE WHEN DATE_PART('second', $1) > 30 THEN 1 ELSE 0 END;
+        SELECT ((DATE_PART('day', $1) * 24 + DATE_PART('hour', $1)) * 60 + DATE_PART('minute', $1) +
+        CASE WHEN DATE_PART('second', $1) > 30 THEN 1 ELSE 0 END)::integer;
     $$
 LANGUAGE SQL IMMUTABLE;
 
@@ -81,8 +81,10 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, end_date date)
     RETURNS TABLE (
         feed_index integer,
         trip_id text,
+        route_id text,
+        direction_id integer,
         stop_id text,
-        service_date date,
+        "date" date,
         "datetime" timestamp with time zone,
         headway interval
     ) AS $$
@@ -92,7 +94,7 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, end_date date)
         route_id,
         direction_id,
         stop_id,
-        service_date,
+        date::date,
         wall_time(date, arrival_time, agency_timezone) AS datetime,
         arrival_time - lag(arrival_time) OVER (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone)) AS headway
     FROM gtfs_stop_times

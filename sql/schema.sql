@@ -45,7 +45,7 @@ VALUES
   ('2017-09-04','Labor Day'),
   ('2017-11-23','Thanksgiving'),
   ('2017-12-25','Christmas'),
-  ('2018-01-01','New Years Day'),
+  ('2018-01-01','New Years Day')
 ;
 
 CREATE TABLE stat_schedule_hours (
