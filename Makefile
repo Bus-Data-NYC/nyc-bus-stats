@@ -42,10 +42,7 @@ $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.csv.gz): stats/$(FEED)-%.csv.gz: | sta
 	$(PSQL) -c "INSERT INTO stat_$* get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
 	$(PSQL) -c "SELECT * FROM stat_$* WHERE feed_index = string_to_array('$(FEED)', '-')" | gzip - > $@
 
-
-sql = sql/schema.sql \
-	sql/functions.sql \
-	$(foreach x,$(CALLSTATS) $(GTFSSTATS),sql/$x.sql)
+sql = $(foreach x,schema functions gtfs $(CALLSTATS)),sql/$x.sql)
 
 init: $(sql)
 	$(PSQL) $(foreach x,$^,-f $x)

@@ -15,6 +15,10 @@ DROP TABLE IF EXISTS stat_evt;
 
 BEGIN;
 
+-- Add indices to calls table
+CREATE INDEX calls_rds ON calls (route_id, direction_id, stop_id);
+CREATE INDEX calls_date ON calls ((timezone('US/Eastern'::text, call_time)::date));
+
 CREATE TABLE stat_date_trips (
     feed_index integer not null,
     "date" date not null,
@@ -201,8 +205,20 @@ CREATE TABLE stat_wtp (
     wtp_10 int not null,
     wtp_15 int not null,
     wtp_20 int not null,
-    wtp_30 int not null
+    wtp_30 int not null,
+    CONSTRAINT stat_wtp_pk PRIMARY KEY (month, route_id, direction_id, stop_id) 
 );
-CREATE INDEX stat_wtp_idx ON stat_wtp (month, route_id, direction_id, stop_id);
+
+CREATE TABLE stat_speed (
+    month date not null,
+    route_id text not null,
+    direction_id int not null,
+    stop_id text not null,
+    weekend integer not null,
+    period integer not null,
+    distance numeric not null,
+    travel_time numeric not null,
+    CONSTRAINT stat_speed_pk PRIMARY KEY (month, route_id, direction_id, stop_id)
+);
 
 COMMIT;
