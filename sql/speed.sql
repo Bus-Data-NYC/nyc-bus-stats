@@ -2,8 +2,7 @@
 -- Uses only imputed calls.
 -- Assumes that trip_id does not repeat across feed_indices.
 -- Assumes time zone is US/Eastern.
-
-CREATE OR REPLACE FUNCTION get_speed (start_date date)
+CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
     RETURNS TABLE(
         "month" date,
         route_id text,
@@ -12,7 +11,7 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         period int,
         weekend int,
         distance numeric,
-        travel_time double precision
+        travel_time numeric
     )
     AS $$
     SELECT
@@ -22,8 +21,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         stop_id,
         period,
         weekend::int,
-        SUM(dist) distance,
-        EXTRACT(epoch from SUM(elapsed)) travel_time
+        ROUND(SUM(dist)::numeric, 3) distance,
+        ROUND(EXTRACT(epoch from SUM(elapsed))::numeric, 1) travel_time
     FROM (
         SELECT
             day_period(call_time::time) AS period,
@@ -41,7 +40,7 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
             LEFT JOIN stat_holidays h ON (h.date = (call_time AT TIME ZONE 'US/Eastern')::DATE)
         WHERE source = 'I'
             AND (call_time AT TIME ZONE 'US/Eastern')::DATE BETWEEN
-                start_date AND start_date + INTERVAL '1 MONTH'
+                start_date AND start_date + term
         WINDOW run AS (PARTITION BY vehicle_id, trip_id ORDER BY call_time ASC)
     ) raw
     WHERE elapsed > '00:00'::INTERVAL
@@ -52,5 +51,21 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         stop_id,
         period,
         weekend
+    $$
+LANGUAGE SQL STABLE;
+
+CREATE OR REPLACE FUNCTION get_speed (start_date date)
+    RETURNS TABLE(
+        "month" date,
+        route_id text,
+        direction_id int,
+        stop_id text,
+        period int,
+        weekend int,
+        distance numeric,
+        travel_time numeric
+    )
+    AS $$
+    SELECT * FROM get_speed(start_date, interval '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
