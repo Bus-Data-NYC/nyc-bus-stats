@@ -40,18 +40,21 @@ CREATE OR REPLACE FUNCTION date_range(start_date date, end_date date)
         WITH RECURSIVE t(n) AS (
             VALUES ("start_date")
             UNION
-            SELECT (n + INTERVAL '1 day')::date FROM t WHERE n < "end_date"
+            SELECT (n + INTERVAL '1 day')::date FROM t WHERE n < "end_date" - INTERVAL '1 DAY'
+
         )
         SELECT * FROM t
     $$
 LANGUAGE SQL IMMUTABLE;
 
 -- return dates->trip_id lookup rows for dates in range
+-- 8s, 2.5m rows for one month
+-- Assumes trip-ids not repeated in different feeds
 CREATE OR REPLACE FUNCTION get_date_trips(start_date date, end_date date)
     RETURNS TABLE(feed_index integer, "date" date, trip_id text)
     AS $$
         SELECT
-            MAX(feed_index), range.date, trip_id
+            feed_index, range.date, trip_id
         FROM
             date_range("start_date", "end_date") range
             LEFT JOIN gtfs_calendar c ON (
@@ -59,19 +62,17 @@ CREATE OR REPLACE FUNCTION get_date_trips(start_date date, end_date date)
                 (ARRAY[sunday, monday, tuesday, wednesday, thursday, friday, saturday])[extract(dow from range.date) + 1] = '1'
                 AND range.date BETWEEN c.start_date AND c.end_date
             )
-            LEFT JOIN gtfs_calendar_dates gcd USING (feed_index, date, service_id)
+            LEFT JOIN gtfs_calendar_dates USING (feed_index, date, service_id)
             LEFT JOIN gtfs_trips USING (feed_index, service_id)
         WHERE exception_type IS NULL
-        GROUP BY range.date, trip_id
         UNION
         SELECT
-            MAX(feed_index), date, trip_id
+            feed_index, date, trip_id
         FROM gtfs_trips
             LEFT JOIN gtfs_calendar_dates USING (feed_index, service_id)
         WHERE
             exception_type = 1
             AND date BETWEEN "start_date" AND "end_date"
-        GROUP BY date, trip_id
     $$
 LANGUAGE SQL STABLE;
 
