@@ -1,18 +1,22 @@
 BEGIN;
 
 -- All day is divided into five parts.
+CREATE OR REPLACE FUNCTION day_period (int)
+    RETURNS integer AS $$
+    SELECT CASE
+        WHEN $1 BETWEEN 0 AND 6 THEN 5
+        WHEN $1 BETWEEN 7 AND 9 THEN 1
+        WHEN $1 BETWEEN 10 AND 15 THEN 2
+        WHEN $1 BETWEEN 16 AND 18 THEN 3
+        WHEN $1 BETWEEN 19 AND 22 THEN 4
+        WHEN $1 >= 23 THEN 5
+    END FROM a
+    $$
+LANGUAGE SQL IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION day_period (time)
     RETURNS integer AS $$
-        WITH a AS (
-            SELECT EXTRACT(HOUR FROM $1) AS hour
-        ) SELECT CASE
-            WHEN hour BETWEEN 0 AND 6 THEN 5
-            WHEN hour BETWEEN 7 AND 9 THEN 1
-            WHEN hour BETWEEN 10 AND 15 THEN 2
-            WHEN hour BETWEEN 16 AND 18 THEN 3
-            WHEN hour BETWEEN 19 AND 22 THEN 4
-            WHEN hour >= 23 THEN 5
-        END FROM a
+    SELECT day_period(EXTRACT(HOUR FROM $1)::integer)
     $$
 LANGUAGE SQL IMMUTABLE;
 
