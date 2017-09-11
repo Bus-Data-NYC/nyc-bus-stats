@@ -12,12 +12,16 @@ DROP TABLE IF EXISTS stat_cewt;
 DROP TABLE IF EXISTS perf_cewt;
 DROP TABLE IF EXISTS stat_wtp;
 DROP TABLE IF EXISTS stat_evt;
-
-BEGIN;
+DROP TABLE IF EXISTS stat_speed;
+DROP TABLE IF EXISTS stat_routeratio;
+DROP TABLE IF EXISTS stat_spacing;
+DROP TABLE IF EXISTS stat_stopdist;
 
 -- Add indices to calls table
 CREATE INDEX calls_rds ON calls (route_id, direction_id, stop_id);
 CREATE INDEX calls_date ON calls ((timezone('US/Eastern'::text, call_time)::date));
+
+BEGIN;
 
 CREATE TABLE stat_date_trips (
     feed_index integer not null,
@@ -219,6 +223,26 @@ CREATE TABLE stat_speed (
     distance numeric not null,
     travel_time numeric not null,
     CONSTRAINT stat_speed_pk PRIMARY KEY (month, route_id, direction_id, stop_id)
+);
+
+CREATE TABLE stat_routeratio (
+    feed_index integer,
+    route_id text,
+    direction_id int,
+    shape_id text,
+    routeratio numeric
+);
+CREATE TABLE stat_spacing(
+    feed_index integer,
+    route_id text,
+    direction_id integer,
+    trip_count integer,
+    spacing_wavg numeric
+);
+CREATE TABLE stat_stopdist (
+    feed_index integer,
+    stop_id text,
+    wavg numeric
 );
 
 COMMIT;

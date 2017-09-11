@@ -30,7 +30,7 @@ all:
 $(CALLSTATS): %: stats/$(MONTH)-%.csv.gz
 
 $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.csv.gz): stats/$(MONTH)-%.csv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
+	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
 	$(PSQL) -c "SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date" | gzip - > $@
 
 #
@@ -39,10 +39,10 @@ $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.csv.gz): stats/$(MONTH)-%.csv.gz: | s
 $(GTFSSTATS): %: stats/$(FEED)-%.csv.gz
 
 $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.csv.gz): stats/$(FEED)-%.csv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "SELECT * FROM stat_$* WHERE feed_index = string_to_array('$(FEED)', '-')" | gzip - > $@
+	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
+	$(PSQL) -c "SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')" | gzip - > $@
 
-sql = $(foreach x,schema functions gtfs $(CALLSTATS)),sql/$x.sql)
+sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
 
 init: $(sql)
 	$(PSQL) $(foreach x,$^,-f $x)
