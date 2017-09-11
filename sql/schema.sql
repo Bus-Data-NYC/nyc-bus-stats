@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS stat_schedule_hours;
 DROP TABLE IF EXISTS stat_headway_scheduled;
 DROP TABLE IF EXISTS stat_headway_observed;
 DROP TABLE IF EXISTS stat_bunching;
+DROP TABLE IF EXISTS stat_bunching_average;
 DROP TABLE IF EXISTS stat_adherence;
 DROP TABLE IF EXISTS stat_service;
 DROP TABLE IF EXISTS stat_otp;
@@ -96,7 +97,7 @@ CREATE TABLE stat_bunching (
     route_id text,
     direction_id int,
     stop_id text,
-    period integer NOT NULL,
+    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     weekend integer NOT NULL,
     call_count integer NOT NULL,
     bunch_count integer NOT NULL
@@ -108,7 +109,7 @@ CREATE TABLE stat_bunching_average (
     route_id text,
     direction_id int,
     stop_id text,
-    period integer NOT NULL,
+    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     weekend integer NOT NULL,
     call_count integer NOT NULL,
     bunch_count integer NOT NULL
@@ -148,7 +149,7 @@ CREATE TABLE stat_evt (
     month date not null,
     route_id text not null,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     count_trips integer not null,
     duration_avg_sched decimal not null,
     duration_avg_obs decimal not null,
@@ -162,7 +163,7 @@ CREATE TABLE stat_service (
     direction_id integer not null,
     stop_id int not null,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     hours integer not null,
     scheduled integer not null,
     observed integer not null
@@ -175,7 +176,7 @@ CREATE TABLE stat_otp (
     direction_id int,
     stop_id text,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     early integer not null,
     on_time integer not null,
     late integer not null
@@ -188,14 +189,14 @@ CREATE TABLE stat_cewt (
     direction_id int,
     stop_id text,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     count int not null,
     count_cewt int not null,
     scheduled integer not null,
     observed integer not null,
     wawt int not null
 );
-CREATE INDEX stat_ewt_idx ON stat_ewt (month, route_id, direction_id, stop_id);
+CREATE INDEX stat_cewt_idx ON stat_cewt (month, route_id, direction_id, stop_id);
 
 CREATE TABLE stat_wtp (
     month date not null,
@@ -203,7 +204,7 @@ CREATE TABLE stat_wtp (
     direction_id int,
     stop_id text,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     hours_hf integer not null,
     wtp_5 int not null,
     wtp_10 int not null,
@@ -219,9 +220,10 @@ CREATE TABLE stat_speed (
     direction_id int not null,
     stop_id text not null,
     weekend integer not null,
-    period integer not null,
+    period integer not null CHECK (period BETWEEN 1 and 5),
     distance numeric not null,
     travel_time numeric not null,
+    count integer not null,
     CONSTRAINT stat_speed_pk PRIMARY KEY (month, route_id, direction_id, stop_id)
 );
 

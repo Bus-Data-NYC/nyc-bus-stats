@@ -11,7 +11,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
         period int,
         weekend int,
         distance numeric,
-        travel_time numeric
+        travel_time numeric,
+        count int
     )
     AS $$
     SELECT
@@ -22,16 +23,15 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
         period,
         weekend::int,
         ROUND(SUM(dist)::numeric, 3) distance,
-        ROUND(EXTRACT(epoch from SUM(elapsed))::numeric, 1) travel_time
+        ROUND(EXTRACT(epoch from SUM(elapsed))::numeric, 1) travel_time,
+        COUNT(*)::integer count
     FROM (
         SELECT
             day_period(call_time::time) AS period,
             EXTRACT(DOW FROM call_time) >= 5 OR h.holiday IS NOT NULL weekend,
-            vehicle_id,
             route_id,
             direction_id,
             stop_id,
-            gtfs_stop_times.shape_dist_traveled,
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
         FROM calls
@@ -63,7 +63,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         period int,
         weekend int,
         distance numeric,
-        travel_time numeric
+        travel_time numeric,
+        count int
     )
     AS $$
     SELECT * FROM get_speed(start_date, interval '1 MONTH')
