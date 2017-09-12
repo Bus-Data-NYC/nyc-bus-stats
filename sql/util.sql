@@ -88,7 +88,7 @@ LANGUAGE SQL STABLE;
  * comes from the `date_trips` table.
  * 5-10 minutes for a month
 */
-CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, end_date date)
+CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, term interval)
     RETURNS TABLE (
         feed_index integer,
         trip_id text,
@@ -107,18 +107,19 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, end_date date)
         stop_id,
         date::date,
         wall_time(date, arrival_time, agency_timezone) AS datetime,
-        arrival_time - lag(arrival_time) OVER (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone)) AS headway
+        arrival_time - lag(arrival_time) OVER (rds) AS headway
     FROM gtfs_stop_times
         LEFT JOIN gtfs_agency USING (feed_index)
         LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
-        INNER JOIN get_date_trips("start_date", "end_date") d USING (feed_index, trip_id)
+        INNER JOIN get_date_trips("start_date", ("start_date" + interval)::date) d USING (feed_index, trip_id)
+    WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
     $$
 LANGUAGE SQL STABLE;
 
 /* 
  * Get observed headways for from inferred calls data
 */
-CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, end_date date)
+CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, term interval)
     RETURNS TABLE (
         trip_id text,
         stop_id text,
@@ -131,19 +132,21 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, end_date date)
         stop_id,
         service_date date,
         call_time AS datetime,
-        call_time - lag(call_time) OVER (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time) AS headway
+        call_time - lag(call_time) OVER (rds) AS headway
     FROM calls
-        WHERE DATE(call_time) BETWEEN "start_date" AND "end_date";
+    WHERE (call_time AT TIME ZONE 'US/Eastern')::date
+        BETWEEN "start_date" AND "start_date" + term
+    WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_adherence(start date, finish date)
+CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
     RETURNS TABLE (
         date date,
+        hour int,
         route_id text,
         direction_id integer,
         stop_id text,
-        hour integer,
         observed integer,
         early_5 integer,
         early_2 integer,
@@ -171,11 +174,10 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, finish date)
         COUNT(NULLIF(false, deviation > interval '900 seconds')) AS late_15,
         COUNT(NULLIF(false, deviation > interval '1200 seconds')) AS late_20,
         COUNT(NULLIF(false, deviation > interval '1800 seconds')) AS late_30
-    FROM (
-        SELECT *, (call_time + deviation)::date service_date
-        FROM calls
-        WHERE source = 'I' AND (call_time + deviation)::date BETWEEN "start" AND "finish"
-        ) AS c
+    FROM calls
+    WHERE source = 'I'
+        AND (call_time AT TIME ZONE 'US/Eastern')::date + deviation
+            BETWEEN "start" AND "start" + term
     GROUP BY
         service_date, 2, route_id, direction_id, stop_id
     $$
