@@ -145,13 +145,14 @@ CREATE TABLE stat_adherence (
 CREATE TABLE stat_evt (
     month date not null,
     route_id text not null,
+    direction_id int,
     weekend integer not null CHECK (weekend BETWEEN 0 and 1),
     period integer not null CHECK (period BETWEEN 1 and 5),
     count_trips integer not null,
     duration_avg_sched decimal not null,
     duration_avg_obs decimal not null,
     pct_late decimal not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, weekend, period) 
 );
 
 CREATE TABLE stat_service (

@@ -94,7 +94,7 @@ This will create a file named `stats/yyyymmdd-route-ratios.csv`.
 ### Route-level EVT
 The "excess in-vehicle time" is the difference between scheduled and actual trip times for a route. This is measured using the Conservative EWT tables.
 ```
-make 
+make evt MONTH=2017-09
 ```
 
 ### Wait Time probability

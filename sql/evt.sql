@@ -1,45 +1,75 @@
 -- evt
--- Excess -invehicle time
--- Calculated acros the duration of trips
+-- Excess in-vehicle time aka excess trip length
+-- Calculated across the duration of trips
 
-DROP TABLE IF EXISTS seq;
-CREATE TEMPORARY TABLE seq (
-    trip_id text PRIMARY KEY,
-    first INTEGER NOT NULL,
-    last integer not null
-);
+CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
+    RETURNS TABLE(
+        month date,
+        route_id text,
+        direction_id int,
+        weekend integer,
+        period integer,
+        count_trips integer,
+        duration_avg_sched decimal,
+        duration_avg_obs decimal,
+        pct_late decimal
+    ) AS $$
+    SELECT
+        start_date,
+        route_id,
+        direction_id,
+        weekend,
+        period,
+        COUNT(*) count_trips,
+        ROUND(AVG(EXTRACT(EPOCH FROM sched.duration)::NUMERIC/60.), 2) duration_avg_sched,
+        ROUND(AVG(EXTRACT(EPOCH FROM obs.duration)::NUMERIC/60.), 2) duration_avg_obs,
+        COUNT(NULLIF(false, obs.duration > sched.duration)) pct_late
+    FROM (
+        SELECT "date",
+            trip_id,
+            route_id,
+            COUNT(*) AS stops,
+            (EXTRACT(isodow FROM "date") >= 6 OR holiday IS NOT NULL) weekend,
+            day_period(wall_time("date", MIN(arrival_time::interval), 'US/Eastern')) period,
+            MAX(arrival_time::INTERVAL) - MIN(arrival_time::interval) AS duration
+        FROM get_date_trips(start::DATE, (start + term)::DATE) d
+            LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+            LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
+            LEFT JOIN stat_holidays USING ("date")
+        GROUP BY "date", trip_id
+        ) sched LEFT JOIN (
+            SELECT
+                (call_time AT TIME ZONE 'US/Eastern')::DATE AS date,
+                trip_id,
+                COUNT(*) calls,
+                MAX(call_time) - MIN(call_time) AS duration
+            FROM calls
+            WHERE (call_time at time zone 'US/Eastern')::DATE >= start::DATE
+                AND (call_time at time zone 'US/Eastern')::DATE <= start + term
+            GROUP BY (call_time at time zone 'US/Eastern')::DATE,
+                trip_id
+        ) obs USING (date, trip_id)
+        WHERE obs.calls = sched.stops
+        GROUP BY
+            route_id,
+            direction_id,
+            weekend,
+            period
+    $$
+LANGUAGE SQL STABLE;
 
-INSERT INTO seq
-SELECT
-    trip_id,
-    MIN(stop_sequence) AS first,
-    MAX(stop_sequence) AS last
-FROM gtfs_trips
-    LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
-    LEFT JOIN gtfs_calendar USING (feed_index, service_id)
-WHERE
-    (start_date, end_date) OVERLAPS ($1, $2)
-GROUP BY trip_id;
-
-SELECT
-    route_id,
-    direction_id,
-    day_period(arrival_time) period,
-    COUNT(*) count_trips,
-    AVG(minutes(s2.arrival_time - s1.arrival_time)) duration_avg_sched,
-    AVG(minutes(s2.call_time - s1.call_time)) duration_avg_obs,
-    COUNT(NULLIF(false, s2.arrival_time - s1.arrival_time < c2.call_time - c1.call_time)) pct_late
-FROM   
-    gtfs_trips
-    INNER JOIN get_date_trips($1, $2) d USING (feed_index, trip_id)
-    LEFT JOIN seq USING (trip_id)
-    LEFT JOIN gtfs_stop_times_gtfs s1 USING (feed_index, trip_id)
-    LEFT JOIN calls c1 USING (trip_index, route_id, direction_id, stop_id)
-    LEFT JOIN gtfs_stop_times_gtfs s2 USING (feed_index, trip_id)
-    LEFT JOIN calls c2 USING (trip_id, stop_id, service_date)
-WHERE
-    s1.stop_sequence = seq.first
-    AND s2.stop_sequence = seq.last
-    AND service_date = d.date;
-GROUP BY
-    route_id, 2;
+CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
+    RETURNS TABLE(
+        month date,
+        route_id text,
+        direction_id int,
+        weekend integer,
+        period integer,
+        count_trips integer,
+        duration_avg_sched decimal,
+        duration_avg_obs decimal,
+        pct_late decimal
+    ) AS $$
+        SELECT * FROM get_evt(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    $$
+LANGUAGE SQL STABLE;
