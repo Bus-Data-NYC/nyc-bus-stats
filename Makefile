@@ -17,7 +17,7 @@ PSQL = psql $(DATABASE) $(PFLAGS)
 GTFSSTATS = routeratio spacing stopdist
 CALLSTATS = evt cewt otp otd bunching service speed
 
-MONTH = 2016-10-01
+MONTH = 2016-10
 FEED = 1
 
 .PHONY: all init $(CALLSTATS) $(GTFSSTATS)

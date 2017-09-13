@@ -16,13 +16,25 @@ CREATE OR REPLACE FUNCTION day_period (int)
         WHEN $1 BETWEEN 16 AND 18 THEN 3
         WHEN $1 BETWEEN 19 AND 22 THEN 4
         WHEN $1 >= 23 THEN 5
-    END FROM a
+    END
     $$
 LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION day_period (time)
     RETURNS integer AS $$
     SELECT day_period(EXTRACT(HOUR FROM $1)::integer)
+    $$
+LANGUAGE SQL IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION day_period (timestamp)
+    RETURNS integer AS $$
+    SELECT day_period(EXTRACT(HOUR FROM $1)::integer)
+    $$
+LANGUAGE SQL IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION day_period (timestamp with time zone)
+    RETURNS integer AS $$
+    SELECT day_period(EXTRACT(HOUR FROM $1 AT TIME ZONE 'US/Eastern')::integer)
     $$
 LANGUAGE SQL IMMUTABLE;
 
@@ -111,7 +123,7 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, term interval)
     FROM gtfs_stop_times
         LEFT JOIN gtfs_agency USING (feed_index)
         LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
-        INNER JOIN get_date_trips("start_date", ("start_date" + interval)::date) d USING (feed_index, trip_id)
+        INNER JOIN get_date_trips("start_date", ("start_date" + term)::date) d USING (feed_index, trip_id)
     WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
     $$
 LANGUAGE SQL STABLE;
@@ -123,19 +135,18 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, term interval)
     RETURNS TABLE (
         trip_id text,
         stop_id text,
-        service_date date,
         "datetime" timestamp with time zone,
         headway interval
     ) AS $$
     SELECT
         trip_id,
         stop_id,
-        service_date date,
         call_time AS datetime,
         call_time - lag(call_time) OVER (rds) AS headway
     FROM calls
-    WHERE (call_time AT TIME ZONE 'US/Eastern')::date
-        BETWEEN "start_date" AND "start_date" + term
+    WHERE source = 'I'
+        AND (call_time AT TIME ZONE 'US/Eastern')::date
+            BETWEEN "start_date" AND "start_date" + term
     WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;
@@ -159,29 +170,32 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         late_30 integer
     ) AS $$
     SELECT
-        service_date,
-        date_trunc('hour', service_date) AS hour,
+        (call_time AT TIME ZONE 'US/Eastern' + deviation)::date AS date,
+        EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern')::integer AS hour,
         route_id,
         direction_id,
         stop_id,
-        COUNT(*) AS observed,
-        COUNT(NULLIF(false, deviation < interval '-5 minutes')) AS early_5,
-        COUNT(NULLIF(false, deviation < interval '-2 minutes 30 seconds')) AS early_2,
-        COUNT(NULLIF(false, deviation < interval '-1 minutes')) AS early,
-        COUNT(NULLIF(false, deviation BETWEEN interval '-1 minutes' AND interval '5 minutes')) AS on_time,
-        COUNT(NULLIF(false, deviation > interval '300 seconds')) AS late,
-        COUNT(NULLIF(false, deviation > interval '600 seconds')) AS late_10,
-        COUNT(NULLIF(false, deviation > interval '900 seconds')) AS late_15,
-        COUNT(NULLIF(false, deviation > interval '1200 seconds')) AS late_20,
-        COUNT(NULLIF(false, deviation > interval '1800 seconds')) AS late_30
+        COUNT(*)::int AS observed,
+        COUNT(NULLIF(false, deviation < interval '-5 minutes'))::int AS early_5,
+        COUNT(NULLIF(false, deviation < interval '-2 minutes 30 seconds'))::int AS early_2,
+        COUNT(NULLIF(false, deviation < interval '-1 minutes'))::int AS early,
+        COUNT(NULLIF(false, deviation BETWEEN interval '-1 minutes' AND interval '5 minutes'))::int AS on_time,
+        COUNT(NULLIF(false, deviation > interval '300 seconds'))::int AS late,
+        COUNT(NULLIF(false, deviation > interval '600 seconds'))::int AS late_10,
+        COUNT(NULLIF(false, deviation > interval '900 seconds'))::int AS late_15,
+        COUNT(NULLIF(false, deviation > interval '1200 seconds'))::int AS late_20,
+        COUNT(NULLIF(false, deviation > interval '1800 seconds'))::int AS late_30
     FROM calls
     WHERE source = 'I'
         AND (call_time AT TIME ZONE 'US/Eastern')::date + deviation
             BETWEEN "start" AND "start" + term
     GROUP BY
-        service_date, 2, route_id, direction_id, stop_id
+        1,
+        2,
+        route_id,
+        direction_id,
+        stop_id
     $$
-
 LANGUAGE SQL STABLE;
 
 COMMIT;

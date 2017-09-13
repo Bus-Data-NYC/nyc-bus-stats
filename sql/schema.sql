@@ -94,8 +94,8 @@ CREATE TABLE stat_bunching (
     route_id text,
     direction_id int,
     stop_id text,
-    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     weekend integer NOT NULL CHECK (weekend BETWEEN 0 and 1),
+    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     call_count integer NOT NULL,
     bunch_count integer NOT NULL,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
@@ -106,8 +106,8 @@ CREATE TABLE stat_bunching_average (
     route_id text,
     direction_id int,
     stop_id text,
-    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     weekend integer NOT NULL CHECK (weekend BETWEEN 0 and 1),
+    period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     call_count integer NOT NULL,
     bunch_count integer NOT NULL,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 

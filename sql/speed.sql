@@ -2,14 +2,15 @@
 -- Uses only imputed calls.
 -- Assumes that trip_id does not repeat across feed_indices.
 -- Assumes time zone is US/Eastern.
+
 CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
     RETURNS TABLE(
         "month" date,
         route_id text,
         direction_id int,
         stop_id text,
-        period int,
         weekend int,
+        period int,
         distance numeric,
         travel_time numeric,
         count int
@@ -20,8 +21,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
         route_id,
         direction_id,
         stop_id,
-        period,
         weekend::int,
+        period,
         ROUND(SUM(dist)::numeric, 3) distance,
         ROUND(EXTRACT(epoch from SUM(elapsed))::numeric, 1) travel_time,
         COUNT(*)::integer count
@@ -49,8 +50,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
         route_id,
         direction_id,
         stop_id,
-        period,
-        weekend
+        weekend,
+        period
     $$
 LANGUAGE SQL STABLE;
 
