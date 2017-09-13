@@ -97,6 +97,17 @@ The "excess in-vehicle time" is the difference between scheduled and actual trip
 make 
 ```
 
+### Wait Time probability
+
+The chance of waiting less than 5, 10, 15, 20, or 30 minutes when arriving at a bus stop at random. Groups data by route, direction, stop, period and weekday/weekend.
+
+```
+make wtp MONTH=2017-09
+```
+
+* `wtp_5`, `wtp_10`, `wtp_15`, `wtp_20`, `wtp_30`: the percentage chance of waiting less than 5, 10, 15, 20, or 30 minutes when arriving at a bus stop at random during high frequency scheduled service
+* `calls`: the number of calls captured in each period
+
 ## Notes & etc
 
 Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25,262

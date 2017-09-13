@@ -202,10 +202,11 @@ CREATE TABLE stat_wtp (
     stop_id text,
     weekend integer not null CHECK (weekend BETWEEN 0 and 1),
     period integer not null CHECK (period BETWEEN 1 and 5),
-    hours_hf integer not null,
+    calls integer not null,
     wtp_5 int not null,
     wtp_10 int not null,
     wtp_15 int not null,
+    wtp_20 int not null,
     wtp_30 int not null,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
