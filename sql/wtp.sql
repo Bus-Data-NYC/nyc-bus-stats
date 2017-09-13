@@ -57,6 +57,6 @@ CREATE OR REPLACE FUNCTION get_wtp (start_date DATE)
         wtp15 int,
         wtp30 int
     ) AS $$
-    SELECT * FROM get_wtp(start_date, INTERVAL '1 MONTH')
+    SELECT * FROM get_wtp(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
     $$
 LANGUAGE SQL STABLE;

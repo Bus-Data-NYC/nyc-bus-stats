@@ -58,7 +58,7 @@ CREATE OR REPLACE FUNCTION date_range(start_date date, end_date date)
         WITH RECURSIVE t(n) AS (
             VALUES ("start_date")
             UNION
-            SELECT (n + INTERVAL '1 day')::date FROM t WHERE n < "end_date" - INTERVAL '1 DAY'
+            SELECT (n + INTERVAL '1 day')::date FROM t WHERE n < "end_date"
 
         )
         SELECT * FROM t

@@ -68,6 +68,6 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         count int
     )
     AS $$
-    SELECT * FROM get_speed(start_date, interval '1 MONTH')
+    SELECT * FROM get_speed(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
     $$
 LANGUAGE SQL STABLE;
