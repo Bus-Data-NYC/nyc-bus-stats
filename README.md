@@ -64,8 +64,9 @@ This calculates the percentage of buses in excess of three minutes behind schedu
 make otd GTFSVERSION=yyyymmdd
 ```
 
-### Conservative EWT
+### EWT
 
+#### Conservative
 This stat examines excess wait time at the stop level, omitting any 'missing' buses from the analysis.
 
 ```
@@ -74,22 +75,36 @@ make cewt MONTH=2015-10
 
 This will create a file named `stats/2015-10-cewt.csv`.
 
+#### Non-conservative
+
+```
+make ewt MONTH=2015-10
+```
+
 ### Stop spacing
 
 Stop spacing measures the average distance between stops. Requires Spatialite and Sqlite3. Creates a file called `stats/GTFSVERSION_stop_spacing_avg.csv`.
 
 ```
-make spacing GTFSVERSION=yyyymmdd
+make spacing FEED=1-2-3
 ````
 
 ### Route circuitousness
 
 This stat measures how indirect is the path of a given route relative to a straight line between the route's endpoints. The calculation uses `gtfs2geojson` (a node utility) and `ogr2ogr`, part of GDAL/OGR.
 ```
-make routeratio GTFSVERSION=yyyymmdd
+make routeratio FEED=1-2-3
 ```
 
 This will create a file named `stats/yyyymmdd-route-ratios.csv`.
+
+### Service
+
+Number of scheduled buses compared with number of observed buses; scheduled frequency compared with observed frequency.
+
+```
+make service MONTH=2017-09
+```
 
 ### Route-level EVT
 The "excess in-vehicle time" is the difference between scheduled and actual trip times for a route. This is measured using the Conservative EWT tables.
@@ -115,6 +130,10 @@ Number of distinct rds_index (route-direction-stop) (calls_2015-10): 25,262
 Date-trips in 2015-10: 1,471,140
 
 Stop times in 2015-10: 56,485,803
+
+### Time zones
+
+These calculations generally assume `timestampz` data, which are freely converted to `US/Eastern` at times. Take care if working with data in other time zones.
 
 ## License
 

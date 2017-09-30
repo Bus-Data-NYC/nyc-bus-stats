@@ -10,7 +10,7 @@ DROP TABLE IF EXISTS stat_adherence;
 DROP TABLE IF EXISTS stat_service;
 DROP TABLE IF EXISTS stat_otp;
 DROP TABLE IF EXISTS stat_cewt;
-DROP TABLE IF EXISTS perf_cewt;
+DROP TABLE IF EXISTS stat_cewt;
 DROP TABLE IF EXISTS stat_wtp;
 DROP TABLE IF EXISTS stat_evt;
 DROP TABLE IF EXISTS stat_speed;
@@ -20,7 +20,7 @@ DROP TABLE IF EXISTS stat_stopdist;
 
 -- Add indices to calls table
 CREATE INDEX calls_rds ON calls (route_id, direction_id, stop_id);
-CREATE INDEX calls_date ON calls ((call_time AT TIME ZONE 'US/Eastern')::date));
+CREATE INDEX calls_date ON calls (((call_time AT TIME ZONE 'US/Eastern')::date));
 
 BEGIN;
 
@@ -243,7 +243,7 @@ CREATE TABLE stat_stopdist (
     feed_index integer,
     stop_id text,
     wavg numeric,
-    PRIMARY KEY stopdist_pk (feed_index, stop_id)
+    CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, stop_id)
 );
 
 COMMIT;

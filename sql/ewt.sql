@@ -1,6 +1,13 @@
 -- ewt
--- scheduled and actual wait times
+-- Excess Wait Time.
+-- During high frequency scheduled service, the average wait time per passenger
+-- implied by the schedule compared with the average wait time inferred from actual bus movements.
 
+-- swt: during high frequency scheduled service, the average Scheduled Wait Time, in seconds
+-- awt: during high frequency scheduled service, the average Actual Wait Time, in seconds
+-- ewt: during high frequency scheduled service, the average Excess Wait Time, in seconds
+-- scheduled: the number of bus calls scheduled during high frequency service
+-- observed: the number of bus calls inferred from Bus Time during high frequency scheduled service
 
 SELECT
   start_date, end_date
@@ -55,10 +62,12 @@ FROM (
 ) AS x
 ORDER BY rds_index, call_time;
 
-/* Measure Actual Headways */
--- use headway_observed
+/* Ingredients:
+  1. measure actual headways (headways_observed)
+  2. measure scheduled headways (headways_scheduled)
+  3. Calculate a weighted average of average wait times over each route/direction/stop/period/weekend.
+  4. Also count the total number of calls in ach 
 
-/* Record Actual Wait Times */
 -- 15m
 INSERT tmp_awt SELECT
   date,

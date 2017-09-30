@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_speed (start_date date)
+CREATE OR REPLACE FUNCTION get_bunching (start_date date)
     RETURNS TABLE(
         "month" date,
         route_id text,

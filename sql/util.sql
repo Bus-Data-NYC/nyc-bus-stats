@@ -1,5 +1,18 @@
 BEGIN;
 
+DROP FUNCTION text2int(text[]);
+DROP FUNCTION day_period (int);
+DROP FUNCTION day_period (time);
+DROP FUNCTION day_period (timestamp);
+DROP FUNCTION day_period (timestamp with time zone);
+DROP FUNCTION day_period_length(integer);
+DROP FUNCTION wall_time(date, interval, text);
+DROP FUNCTION date_range(date, date);
+DROP FUNCTION get_date_trips(date, date);
+DROP FUNCTION get_headway_scheduled(date, interval);
+DROP FUNCTION get_headway_observed(date, interval);
+DROP FUNCTION get_adherence(date, interval);
+
 CREATE OR REPLACE FUNCTION text2int(text[])
     RETURNS integer[] AS $$
         SELECT array_agg(n::integer) FROM unnest($1) AS n;
