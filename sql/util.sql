@@ -38,11 +38,15 @@ CREATE OR REPLACE FUNCTION day_period (timestamp with time zone)
     $$
 LANGUAGE SQL IMMUTABLE;
 
--- give an interval in the number of elapsed minutes
-CREATE OR REPLACE FUNCTION minutes(interval)
+CREATE OR REPLACE FUNCTION day_period_length(integer)
     RETURNS integer AS $$
-        SELECT ((DATE_PART('day', $1) * 24 + DATE_PART('hour', $1)) * 60 + DATE_PART('minute', $1) +
-        CASE WHEN DATE_PART('second', $1) > 30 THEN 1 ELSE 0 END)::integer;
+    SELECT CASE
+        WHEN $1 = 1 THEN 3 * 60 * 60
+        WHEN $1 = 2 THEN 6 * 60 * 60
+        WHEN $1 = 3 THEN 3 * 60 * 60
+        WHEN $1 = 4 THEN 4 * 60 * 60
+        WHEN $1 = 5 THEN 8 * 60 * 60
+    END
     $$
 LANGUAGE SQL IMMUTABLE;
 

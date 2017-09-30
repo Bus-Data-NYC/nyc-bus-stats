@@ -9,7 +9,7 @@ SELECT
     sched.headway AS headway_sched,
     COUNT(*) AS count,
     COUNT(NULLIF(false, a.headway_obs > a.headway_sched)) AS count_cewt,
-    ROUND(AVG(minutes(a.headway_obs - a.headway_sched)), 2) AS cewt_avg
+    ROUND(AVG(EXTRACT(EPOCH FROM a.headway_obs - a.headway_sched)::NUMERIC / 60.), 2) AS cewt_avg
 FROM
     stat_headway_observed obs
     INNER JOIN stat_headway_scheduled sched USING (trip_id, route_id, direction_id, stop_id)
