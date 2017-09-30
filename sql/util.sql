@@ -102,51 +102,47 @@ LANGUAGE SQL STABLE;
 */
 CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, term interval)
     RETURNS TABLE (
-        feed_index integer,
         trip_id text,
-        route_id text,
-        direction_id integer,
         stop_id text,
         "date" date,
-        "datetime" timestamp with time zone,
         headway interval
     ) AS $$
-    SELECT
-        feed_index,
-        trip_id,
-        route_id,
-        direction_id,
-        stop_id,
-        date::date,
-        wall_time(date, arrival_time, agency_timezone) AS datetime,
-        arrival_time - lag(arrival_time) OVER (rds) AS headway
-    FROM gtfs_stop_times
-        LEFT JOIN gtfs_agency USING (feed_index)
-        LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
-        INNER JOIN get_date_trips("start_date", ("start_date" + term)::date) d USING (feed_index, trip_id)
-    WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
+    SELECT * FROM (
+        SELECT
+            trip_id,
+            stop_id,
+            wall_time(date, arrival_time, agency_timezone)::date AS date,
+            arrival_time - LAG(arrival_time) OVER (rds) AS headway
+        FROM gtfs_stop_times
+            LEFT JOIN gtfs_agency USING (feed_index)
+            LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
+            -- join with a list of dates beginning just before our interval
+            INNER JOIN get_date_trips(("start_date" - INTERVAL '1 day')::DATE, ("start_date" + term)::DATE) d USING (feed_index, trip_id)
+        WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
+    ) a WHERE a.date >= "start_date"
     $$
 LANGUAGE SQL STABLE;
 
 /* 
- * Get observed headways for from inferred calls data
+ * Get observed headways from inferred calls data
 */
 CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, term interval)
     RETURNS TABLE (
         trip_id text,
         stop_id text,
-        "datetime" timestamp with time zone,
+        "date" date,
         headway interval
     ) AS $$
     SELECT
         trip_id,
         stop_id,
-        call_time AS datetime,
-        call_time - lag(call_time) OVER (rds) AS headway
+        -- The "date" of a call is the scheduled calendar date, so take deviation into account.
+        ((call_time - deviation) AT TIME ZONE 'US/Eastern')::date AS date,
+        call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls
-    WHERE source = 'I'
-        AND (call_time AT TIME ZONE 'US/Eastern')::date
-            BETWEEN "start_date" AND "start_date" + term
+    WHERE (call_time AT TIME ZONE 'US/Eastern')::date
+        BETWEEN "start_date"
+        AND ("start_date" + term)::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'US/Eastern'
     WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;

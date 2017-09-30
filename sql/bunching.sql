@@ -1,30 +1,53 @@
-INSERT INTO stat_headway_scheduled
-    SELECT *
-    FROM get_headway_scheduled($1, $2)
-    ON CONFLICT DO NOTHING;
+CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
+    RETURNS TABLE(
+        start date,
+        interval interval,
+        route_id text,
+        direction_id int,
+        stop_id text,
+        weekend int,
+        period int,
+        count int,
+        bunch_count int
+    )
+    AS $$
+    SELECT
+        start,
+        interval,
+        route_id,
+        direction_id,
+        stop_id,
+        (EXTRACT(isodow FROM service_date) >= 6 OR h.holiday IS NOT NULL) AS weekend,
+        day_period(obs.datetime) AS period,
+        COUNT(*) AS count,
+        COUNT(NULLIF(false, obs.headway < sched.headway * 0.25)) AS bunch_count
+    FROM
+        stat_headway_observed AS obs
+        LEFT JOIN stat_headway_scheduled AS sched USING (trip_id, stop_id, "date")
+        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN stat_holidays h USING ("date")
+    GROUP BY
+        route_id,
+        direction_id,
+        stop_id,
+        5, 6;
+    $$
+LANGUAGE SQL STABLE;
 
-INSERT INTO stat_headway_observed
-    SELECT *
-    FROM get_headway_observed($1, $2)
-    ON CONFLICT DO NOTHING;
-
-SELECT
-    date_trunc('month', service_date)::date AS month,
-    route_id,
-    direction_id,
-    stop_id,
-    (EXTRACT(isodow FROM service_date) >= 6 OR h.holiday IS NOT NULL) AS weekend,
-    day_period(obs.datetime::time) AS period,
-    COUNT(*) AS call_count,
-    COUNT(NULLIF(false, obs.headway < sched.headway * 0.25)) AS bunch_count
-FROM
-    stat_headway_observed AS obs
-    LEFT JOIN stat_headway_scheduled sched USING (trip_id, stop_id, service_date)
-    LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-    LEFT JOIN stat_holidays h ON (h.date = obs.datetime::date)
-GROUP BY
-    date_trunc('month', service_date)::date,
-    route_id,
-    direction_id,
-    stop_id,
-    5, 6;
+CREATE OR REPLACE FUNCTION get_speed (start_date date)
+    RETURNS TABLE(
+        "month" date,
+        route_id text,
+        direction_id int,
+        stop_id text,
+        weekend int,
+        period int,
+        count int,
+        bunch_count int
+    )
+    AS $$
+    SELECT start_date AS month, route_id, direction_id, stop_id,
+        weekend, period, count, bunch_count,
+    FROM get_bunching(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    $$
+LANGUAGE SQL STABLE;

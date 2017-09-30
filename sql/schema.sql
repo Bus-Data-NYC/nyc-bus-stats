@@ -70,24 +70,22 @@ CREATE TABLE stat_schedule_hours (
 );
 
 CREATE TABLE stat_headway_scheduled (
-    feed_index int not null,
     trip_id text NOT NULL,
     stop_id text not null,
-    "date" date not null,
-    datetime timestamp with time zone NOT NULL,
-    headway interval DEFAULT NULL,
-    CONSTRAINT stat_headway_scheduled_pk
-        PRIMARY KEY (feed_index, trip_id, stop_id, "date")
+    "date" date NOT NULL,
+    headway interval DEFAULT NULL
 );
+CREATE UNIQUE INDEX stat_hws_idx ON stat_headway_scheduled
+    (trip_id, stop_id, "date");
 
 CREATE TABLE stat_headway_observed (
     trip_id text NOT NULL,
     stop_id text NOT NULL,
-    "datetime" timestamp with time zone NOT NULL,
-    headway interval DEFAULT NULL,
-    CONSTRAINT stat_headway_observed_pk
-        PRIMARY KEY (trip_id, stop_id, ("datetime" at time zone 'US/Eastern')::date)
+    "date" date NOT NULL,
+    headway interval DEFAULT NULL
 );
+CREATE UNIQUE INDEX stat_hwob_idx ON stat_headway_observed
+    (trip_id, stop_id, "date");
 
 CREATE TABLE stat_bunching (
     month date NOT NULL,
