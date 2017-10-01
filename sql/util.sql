@@ -117,14 +117,14 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
             feed_index,
             trip_id,
             stop_id,
-            wall_time(date, arrival_time, agency_timezone)::date AS date,
+            wall_time(d.date, arrival_time, agency_timezone)::date AS date,
             day_period(EXTRACT(hours from arrival_time)::int) AS period,
             arrival_time - LAG(arrival_time) OVER (rds) AS headway
-        FROM gtfs_stop_times
+        FROM  -- list of dates beginning just before our interval
+            get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d
             LEFT JOIN gtfs_agency USING (feed_index)
             LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
-            -- join with a list of dates beginning just before our interval
-            INNER JOIN get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d USING (feed_index, trip_id)
+            LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
         WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
     ) a WHERE a.date >= "start"
     $$
