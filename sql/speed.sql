@@ -2,7 +2,6 @@
 -- Uses only imputed calls.
 -- Assumes that trip_id does not repeat across feed_indices.
 -- Assumes time zone is US/Eastern.
-
 CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
         "month" date,
@@ -11,8 +10,8 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         stop_id text,
         weekend int,
         period int,
-        distance numeric,
-        travel_time numeric,
+        distance numeric(12, 3),
+        travel_time numeric(12, 1),
         count int
     )
     AS $$
@@ -23,13 +22,13 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         stop_id,
         weekend::int,
         period,
-        ROUND(SUM(dist)::numeric, 3) distance,
-        ROUND(EXTRACT(epoch from SUM(elapsed))::numeric, 1) travel_time,
-        COUNT(*)::integer count
+        SUM(dist)::numeric(12, 3) distance,
+        EXTRACT(epoch from SUM(elapsed))::numeric(12, 1) travel_time,
+        COUNT(*)::int count
     FROM (
         SELECT
-            day_period(call_time::time) AS period,
-            EXTRACT(DOW FROM call_time) >= 5 OR h.holiday IS NOT NULL weekend,
+            EXTRACT(isodow FROM call_time AT TIME ZONE 'US/Eastern') > 5 OR h.holiday IS NOT NULL weekend,
+            day_period(call_time AT TIME ZONE 'US/Eastern') AS period,
             route_id,
             direction_id,
             stop_id,
@@ -44,7 +43,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             AND (call_time AT TIME ZONE 'US/Eastern')::DATE < ("start" + "term")::DATE
         WINDOW run AS (PARTITION BY vehicle_id, trip_id ORDER BY call_time ASC)
     ) raw
-    WHERE elapsed > '00:00'::INTERVAL
+    WHERE elapsed > INTERVAL '0'
         AND dist > 0
     GROUP BY
         route_id,

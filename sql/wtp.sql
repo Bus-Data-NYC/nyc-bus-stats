@@ -23,8 +23,8 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         route_id,
         direction_id,
         stop_id,
-        EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL AS weekend,
-        day_period("datetime") AS period,
+        EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL AS weekend,
+        period,
         COUNT(*)::int AS calls,
         SUM(LEAST(EXTRACT(epoch FROM headway),  5 * 60)) / day_period_length(day_period("datetime")) wtp5,
         SUM(LEAST(EXTRACT(epoch FROM headway), 10 * 60)) / day_period_length(day_period("datetime")) wtp10,
@@ -40,8 +40,8 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         route_id,
         direction_id,
         stop_id,
-        4,
-        5
+        EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL,
+        period
     $$
 LANGUAGE SQL STABLE;
 

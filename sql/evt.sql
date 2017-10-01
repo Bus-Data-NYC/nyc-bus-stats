@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
             trip_id,
             route_id,
             COUNT(*) AS stops,
-            (EXTRACT(isodow FROM "date") >= 6 OR holiday IS NOT NULL) weekend,
+            (EXTRACT(isodow FROM "date") > 5 OR holiday IS NOT NULL) weekend,
             day_period(wall_time("date", MIN(arrival_time::interval), 'US/Eastern')) period,
             MAX(arrival_time::INTERVAL) - MIN(arrival_time::interval) AS duration
         FROM get_date_trips("start", ("start" + "term")::date) d

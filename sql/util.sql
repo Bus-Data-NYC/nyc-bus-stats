@@ -78,7 +78,7 @@ CREATE OR REPLACE FUNCTION get_date_trips(start date, finish date)
             date_range("start", "finish" - "start") range
             LEFT JOIN gtfs_calendar c ON (
                 -- address the weekday columns of gtfs_calendar as an array, using the day-of-week as an index
-                (ARRAY[sunday, monday, tuesday, wednesday, thursday, friday, saturday])[extract(dow from range.date) + 1] = '1'
+                (ARRAY[monday, tuesday, wednesday, thursday, friday, saturday, sunday])[extract(isodow from range.date)] = '1'
                 AND range.date BETWEEN c.start_date AND c.end_date
             )
             LEFT JOIN gtfs_calendar_dates USING (feed_index, date, service_id)

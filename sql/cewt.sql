@@ -4,7 +4,7 @@ SELECT
     direction_id,
     stop_id,
     day_period(obs.datetime::time) AS period,
-    (EXTRACT(isodow FROM obs.datetime) >= 6 OR holiday IS NOT NULL) AS weekend,
+    (EXTRACT(isodow FROM obs.datetime) > 5 OR holiday IS NOT NULL) AS weekend,
     obs.headway AS headway_obs,
     sched.headway AS headway_sched,
     COUNT(*) AS count,
