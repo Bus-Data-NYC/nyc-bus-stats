@@ -25,18 +25,18 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         ROUND(AVG(EXTRACT(EPOCH FROM obs.duration)::NUMERIC/60.), 2) duration_avg_obs,
         COUNT(NULLIF(false, obs.duration > sched.duration)) pct_late
     FROM (
-        SELECT "date",
+        SELECT d.date,
             trip_id,
             route_id,
             COUNT(*) AS stops,
             (EXTRACT(isodow FROM "date") >= 6 OR holiday IS NOT NULL) weekend,
             day_period(wall_time("date", MIN(arrival_time::interval), 'US/Eastern')) period,
             MAX(arrival_time::INTERVAL) - MIN(arrival_time::interval) AS duration
-        FROM get_date_trips(start::DATE, (start + term)::DATE) d
+        FROM get_date_trips("start", ("start" + "term")::date) d
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
             LEFT JOIN stat_holidays USING ("date")
-        GROUP BY "date", trip_id
+        GROUP BY d.date, trip_id
         ) sched LEFT JOIN (
             SELECT
                 (call_time AT TIME ZONE 'US/Eastern')::DATE AS date,
@@ -45,7 +45,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
                 MAX(call_time) - MIN(call_time) AS duration
             FROM calls
             WHERE (call_time at time zone 'US/Eastern')::DATE >= start::DATE
-                AND (call_time at time zone 'US/Eastern')::DATE <= start + term
+                AND (call_time at time zone 'US/Eastern')::DATE < "start" + "term"
             GROUP BY (call_time at time zone 'US/Eastern')::DATE,
                 trip_id
         ) obs USING (date, trip_id)
@@ -70,6 +70,6 @@ CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
         duration_avg_obs decimal,
         pct_late decimal
     ) AS $$
-        SELECT * FROM get_evt(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+        SELECT * FROM get_evt(start_date, INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

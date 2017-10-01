@@ -1,18 +1,5 @@
 BEGIN;
 
-DROP FUNCTION text2int(text[]);
-DROP FUNCTION day_period (int);
-DROP FUNCTION day_period (time);
-DROP FUNCTION day_period (timestamp);
-DROP FUNCTION day_period (timestamp with time zone);
-DROP FUNCTION day_period_length(integer);
-DROP FUNCTION wall_time(date, interval, text);
-DROP FUNCTION date_range(date, date);
-DROP FUNCTION get_date_trips(date, date);
-DROP FUNCTION get_headway_scheduled(date, interval);
-DROP FUNCTION get_headway_observed(date, interval);
-DROP FUNCTION get_adherence(date, interval);
-
 CREATE OR REPLACE FUNCTION text2int(text[])
     RETURNS integer[] AS $$
         SELECT array_agg(n::integer) FROM unnest($1) AS n;
@@ -70,28 +57,25 @@ CREATE OR REPLACE FUNCTION wall_time(d date, t interval, zone text)
     $$
 LANGUAGE SQL IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION date_range(start_date date, end_date date)
+CREATE OR REPLACE FUNCTION date_range(start date, length integer)
     RETURNS TABLE("date" date) AS $$
-        WITH RECURSIVE t(n) AS (
-            VALUES ("start_date")
-            UNION
-            SELECT (n + INTERVAL '1 day')::date FROM t WHERE n < "end_date"
-
-        )
-        SELECT * FROM t
+        SELECT "start" + i - 1 as date
+        FROM GENERATE_SERIES(1, length) AS a (i)
     $$
 LANGUAGE SQL IMMUTABLE;
 
 -- return dates->trip_id lookup rows for dates in range
 -- 8s, 2.5m rows for one month
 -- Assumes trip-ids not repeated in different feeds
-CREATE OR REPLACE FUNCTION get_date_trips(start_date date, end_date date)
+-- "start" is an inclusive lower bound, "finish" is exclusive.
+-- So: get_date_trips('2016-01-01', '2016-02-01') will get all trips in January.
+CREATE OR REPLACE FUNCTION get_date_trips(start date, finish date)
     RETURNS TABLE(feed_index integer, "date" date, trip_id text)
     AS $$
         SELECT
             feed_index, range.date, trip_id
         FROM
-            date_range("start_date", "end_date") range
+            date_range("start", "finish" - "start") range
             LEFT JOIN gtfs_calendar c ON (
                 -- address the weekday columns of gtfs_calendar as an array, using the day-of-week as an index
                 (ARRAY[sunday, monday, tuesday, wednesday, thursday, friday, saturday])[extract(dow from range.date) + 1] = '1'
@@ -104,10 +88,11 @@ CREATE OR REPLACE FUNCTION get_date_trips(start_date date, end_date date)
         SELECT
             feed_index, date, trip_id
         FROM gtfs_trips
-            LEFT JOIN gtfs_calendar_dates USING (feed_index, service_id)
+            LEFT JOIN gtfs_calendar_dates AS gcd USING (feed_index, service_id)
         WHERE
             exception_type = 1
-            AND date BETWEEN "start_date" AND "end_date"
+            AND gcd.date >= "start"
+            AND gcd.date < "finish"
     $$
 LANGUAGE SQL STABLE;
 
@@ -117,7 +102,7 @@ LANGUAGE SQL STABLE;
  * comes from the `date_trips` table.
  * 5-10 minutes for a month
 */
-CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, term interval)
+CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
     RETURNS TABLE (
         trip_id text,
         stop_id text,
@@ -134,16 +119,16 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start_date date, term interval)
             LEFT JOIN gtfs_agency USING (feed_index)
             LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
             -- join with a list of dates beginning just before our interval
-            INNER JOIN get_date_trips(("start_date" - INTERVAL '1 day')::DATE, ("start_date" + term)::DATE) d USING (feed_index, trip_id)
+            INNER JOIN get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d USING (feed_index, trip_id)
         WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
-    ) a WHERE a.date >= "start_date"
+    ) a WHERE a.date >= "start"
     $$
 LANGUAGE SQL STABLE;
 
 /* 
  * Get observed headways from inferred calls data
 */
-CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, term interval)
+CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
     RETURNS TABLE (
         trip_id text,
         stop_id text,
@@ -157,9 +142,8 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start_date date, term interval)
         ((call_time - deviation) AT TIME ZONE 'US/Eastern')::date AS date,
         call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls
-    WHERE (call_time AT TIME ZONE 'US/Eastern')::date
-        BETWEEN "start_date"
-        AND ("start_date" + term)::TIMESTAMP WITHOUT TIME ZONE AT TIME ZONE 'US/Eastern'
+    WHERE (call_time AT TIME ZONE 'US/Eastern')::date >= "start"
+        AND (call_time AT TIME ZONE 'US/Eastern')::date < ("start" + "term")::DATE
     WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;
@@ -201,7 +185,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
     FROM calls
     WHERE source = 'I'
         AND (call_time AT TIME ZONE 'US/Eastern')::date + deviation
-            BETWEEN "start" AND "start" + term
+            BETWEEN "start" AND "start" + "term"
     GROUP BY
         1,
         2,

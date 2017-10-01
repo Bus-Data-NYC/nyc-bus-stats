@@ -26,6 +26,9 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         LEFT JOIN stat_headway_scheduled AS sched USING (trip_id, stop_id, "date")
         LEFT JOIN gtfs_trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays h USING ("date")
+    WHERE
+        "date" >= "start"
+        AND "date" < ("start" + "term")::date
     GROUP BY
         route_id,
         direction_id,
@@ -34,7 +37,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_bunching (start_date date)
+CREATE OR REPLACE FUNCTION get_bunching (start date)
     RETURNS TABLE(
         "month" date,
         route_id text,
@@ -46,8 +49,8 @@ CREATE OR REPLACE FUNCTION get_bunching (start_date date)
         bunch_count int
     )
     AS $$
-    SELECT start_date AS month, route_id, direction_id, stop_id,
-        weekend, period, count, bunch_count,
-    FROM get_bunching(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    SELECT start AS month, route_id, direction_id, stop_id,
+        weekend, period, count, bunch_count
+    FROM get_bunching(start, INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

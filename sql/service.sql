@@ -1,6 +1,6 @@
 -- Counts of scheduled buses, observed buses, per route stop and direction
 
-CREATE OR REPLACE FUNCTION get_service (start_date DATE, term INTERVAL)
+CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
     RETURNS TABLE(
         start date,
         term interval,
@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION get_service (start_date DATE, term INTERVAL)
         observed int
     ) AS $$
     SELECT
-        start_date AS start,
+        "start" AS start,
         term,
         route_id,
         direction_id,
@@ -28,7 +28,8 @@ CREATE OR REPLACE FUNCTION get_service (start_date DATE, term INTERVAL)
         LEFT JOIN adherence AS a USING (date, route_id, direction_id, stop_id, hour)
         LEFT JOIN ref_holidays h USING (date)
         JOIN ref_rds USING (rds_index)
-    WHERE sh.date BETWEEN start_date AND start_date + term
+    WHERE sh.date >= "start"
+        AND sh.date < "start" + "term"
         AND sh.pickups > 0
         AND NOT exception
     GROUP BY rds_index,
@@ -37,7 +38,7 @@ CREATE OR REPLACE FUNCTION get_service (start_date DATE, term INTERVAL)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_service (start_date DATE)
+CREATE OR REPLACE FUNCTION get_service ("start" DATE)
     RETURNS TABLE(
         month date,
         route_id text,
@@ -49,6 +50,6 @@ CREATE OR REPLACE FUNCTION get_service (start_date DATE)
         scheduled int,
         observed int
     ) AS $$
-    SELECT * FROM get_service(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    SELECT * FROM get_service("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

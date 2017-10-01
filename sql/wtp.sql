@@ -3,7 +3,7 @@
 -- hours: the number of hours measured (during high frequency scheduled service)
 -- Calculated with the observed headways. We calculate the fraction of a period less than x minutes before a call, then divide by the total number of minutes per period
 
-CREATE OR REPLACE FUNCTION get_wtp (start_date DATE, term INTERVAL)
+CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
     RETURNS TABLE(
         "month" date,
         route_id text,
@@ -19,6 +19,7 @@ CREATE OR REPLACE FUNCTION get_wtp (start_date DATE, term INTERVAL)
         wtp30 int
     ) AS $$
     SELECT
+        "start" month,
         route_id,
         direction_id,
         stop_id,
@@ -32,9 +33,9 @@ CREATE OR REPLACE FUNCTION get_wtp (start_date DATE, term INTERVAL)
         SUM(LEAST(EXTRACT(epoch FROM headway), 30 * 60)) / day_period_length(day_period("datetime")) wtp30
     FROM stat_headway_observed
         LEFT JOIN gtfs_trips USING (trip_id)
-        LEFT JOIN stat_holidays h ON (h.date = ("datetime" AT TIME ZONE 'US/Eastern')::DATE)
-    WHERE ("datetime" AT TIME ZONE 'US/Eastern')::DATE BETWEEN
-            start_date AND start_date + term
+        LEFT JOIN stat_holidays h USING ("date")
+    WHERE "date" >= "start"
+            "date" < ("start" + "term")::DATE
     GROUP BY 
         route_id,
         direction_id,
@@ -44,7 +45,7 @@ CREATE OR REPLACE FUNCTION get_wtp (start_date DATE, term INTERVAL)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_wtp (start_date DATE)
+CREATE OR REPLACE FUNCTION get_wtp ("start" DATE)
     RETURNS TABLE(
         "month" date,
         route_id text,

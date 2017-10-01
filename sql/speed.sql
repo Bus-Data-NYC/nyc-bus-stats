@@ -3,7 +3,7 @@
 -- Assumes that trip_id does not repeat across feed_indices.
 -- Assumes time zone is US/Eastern.
 
-CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
+CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
         "month" date,
         route_id text,
@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
     )
     AS $$
     SELECT
-        start_date,
+        "start" as month,
         route_id,
         direction_id,
         stop_id,
@@ -40,8 +40,8 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
             LEFT JOIN gtfs_stop_times USING (trip_id, stop_id)
             LEFT JOIN stat_holidays h ON (h.date = (call_time AT TIME ZONE 'US/Eastern')::DATE)
         WHERE source = 'I'
-            AND (call_time AT TIME ZONE 'US/Eastern')::DATE BETWEEN
-                start_date AND start_date + term
+            AND (call_time AT TIME ZONE 'US/Eastern')::DATE >= "start"
+            AND (call_time AT TIME ZONE 'US/Eastern')::DATE < ("start" + "term")::DATE
         WINDOW run AS (PARTITION BY vehicle_id, trip_id ORDER BY call_time ASC)
     ) raw
     WHERE elapsed > '00:00'::INTERVAL
@@ -55,7 +55,7 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval)
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_speed (start_date date)
+CREATE OR REPLACE FUNCTION get_speed ("start" date)
     RETURNS TABLE(
         "month" date,
         route_id text,
@@ -68,7 +68,7 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date)
         count int
     )
     AS $$
-    SELECT * FROM get_speed(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    SELECT * FROM get_speed("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
 
@@ -122,5 +122,6 @@ CREATE OR REPLACE FUNCTION get_speed (start_date date, term interval, route text
         stop_id,
         weekend,
         period
+    SELECT * FROM get_speed("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
