@@ -1,11 +1,11 @@
 CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     RETURNS TABLE(
         start date,
-        interval interval,
+        term interval,
         route_id text,
         direction_id int,
         stop_id text,
-        weekend int,
+        weekend boolean,
         period int,
         count int,
         bunch_count int
@@ -48,7 +48,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend int,
+        weekend boolean,
         period int,
         count int,
         bunch_count int
