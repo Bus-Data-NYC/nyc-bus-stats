@@ -104,16 +104,21 @@ LANGUAGE SQL STABLE;
 */
 CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
     RETURNS TABLE (
+        feed_index int,
         trip_id text,
         stop_id text,
         "date" date,
+        period int,
         headway interval
     ) AS $$
-    SELECT * FROM (
+    SELECT *
+    FROM (
         SELECT
+            feed_index,
             trip_id,
             stop_id,
             wall_time(date, arrival_time, agency_timezone)::date AS date,
+            day_period(EXTRACT(hours from arrival_time)::int) AS period,
             arrival_time - LAG(arrival_time) OVER (rds) AS headway
         FROM gtfs_stop_times
             LEFT JOIN gtfs_agency USING (feed_index)
@@ -133,6 +138,7 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         trip_id text,
         stop_id text,
         "date" date,
+        period int,
         headway interval
     ) AS $$
     SELECT
@@ -140,6 +146,7 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         stop_id,
         -- The "date" of a call is the scheduled calendar date, so take deviation into account.
         ((call_time - deviation) AT TIME ZONE 'US/Eastern')::date AS date,
+        day_period((call_time - deviation) AT TIME ZONE 'US/Eastern') as period,
         call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls
     WHERE (call_time AT TIME ZONE 'US/Eastern')::date >= "start"

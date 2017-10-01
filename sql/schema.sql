@@ -70,22 +70,25 @@ CREATE TABLE stat_schedule_hours (
 );
 
 CREATE TABLE stat_headway_scheduled (
+    feed_index int not null,
     trip_id text NOT NULL,
     stop_id text not null,
     "date" date NOT NULL,
+    period int not null,
     headway interval DEFAULT NULL
 );
 CREATE UNIQUE INDEX stat_hws_idx ON stat_headway_scheduled
-    (trip_id, stop_id, "date");
+    (feed_index, trip_id, stop_id, "date");
 
 CREATE TABLE stat_headway_observed (
     trip_id text NOT NULL,
     stop_id text NOT NULL,
     "date" date NOT NULL,
+    period int not null,
     headway interval DEFAULT NULL
 );
-CREATE UNIQUE INDEX stat_hwob_idx ON stat_headway_observed
-    (trip_id, stop_id, "date");
+CREATE INDEX stat_hwob_idx ON stat_headway_observed (trip_id, stop_id);
+CREATE INDEX stat_hwob_date ON stat_headway_observed ("date");
 
 CREATE TABLE stat_bunching (
     month date NOT NULL,

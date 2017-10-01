@@ -61,9 +61,8 @@ sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
 prepare: headway-observed headway-scheduled
 
 headway-%:
-	$(PSQL) -c "INSERT INTO stat_headway_$* (trip_id, stop_id, date, headway) \
-		SELECT trip_id, stop_id, date, headway \
-		FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '1 MONTH') ON CONFLICT DO NOTHING"
+	$(PSQL) -c "INSERT INTO stat_headway_$* \
+		SELECT * FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '1 MONTH') ON CONFLICT DO NOTHING"
 
 init: $(sql)
 	$(PSQL) $(foreach x,$^,-f $x)

@@ -17,13 +17,15 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         route_id,
         direction_id,
         stop_id,
-        (EXTRACT(isodow FROM service_date) >= 6 OR h.holiday IS NOT NULL) AS weekend,
-        day_period(obs.datetime) AS period,
-        COUNT(*) AS count,
-        COUNT(NULLIF(false, obs.headway < sched.headway * 0.25)) AS bunch_count
+        (EXTRACT(isodow FROM "date") >= 6 OR h.holiday IS NOT NULL) AS weekend,
+        period,
+        -- number of rows with both kinds of headway recorded
+        COUNT(NULLIF(TRUE, sched.headway IS NULL OR obs.headway IS NULL)) as count,
+        -- number of rows where observed interval is less than 1/4 of scheduled interval
+        COUNT(NULLIF(FALSE, COALESCE(obs.headway < sched.headway * 0.25, FALSE))) AS bunch_count
     FROM
-        stat_headway_observed AS obs
-        LEFT JOIN stat_headway_scheduled AS sched USING (trip_id, stop_id, "date")
+        stat_headway_scheduled AS sched
+        LEFT JOIN stat_headway_observed AS obs USING (trip_id, stop_id, "date")
         LEFT JOIN gtfs_trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays h USING ("date")
     WHERE
@@ -33,7 +35,8 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         route_id,
         direction_id,
         stop_id,
-        5, 6;
+        period,
+        (EXTRACT(isodow FROM "date") >= 6 OR h.holiday IS NOT NULL);
     $$
 LANGUAGE SQL STABLE;
 
