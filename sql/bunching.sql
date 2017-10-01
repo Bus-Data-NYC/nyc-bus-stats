@@ -13,14 +13,14 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     AS $$
     SELECT
         start,
-        interval,
+        term as interval,
         route_id,
         direction_id,
         stop_id,
         EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL AS weekend,
         period,
         -- number of rows with both kinds of headway recorded
-        COUNT(NULLIF(TRUE, sched.headway IS NULL OR obs.headway IS NULL))::int as count,
+        COUNT(*)::int as count,
         -- number of rows where observed interval is less than 1/4 of scheduled interval
         COUNT(NULLIF(FALSE, COALESCE(obs.headway < sched.headway * 0.25, FALSE)))::int AS bunch_count
     FROM
@@ -31,6 +31,8 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     WHERE
         "date" >= "start"
         AND "date" < ("start" + "term")::date
+        AND sched.headway IS NOT NULL
+        AND obs.headway IS NOT NULL
     GROUP BY
         route_id,
         direction_id,
