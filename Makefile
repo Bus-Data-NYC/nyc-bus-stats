@@ -40,20 +40,26 @@ all:
 #
 # Call-based stats
 #
-$(CALLSTATS): %: stats/$(MONTH)-%.csv.gz
+$(CALLSTATS): %: stats/$(MONTH)-%.tsv.gz
 
-$(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.csv.gz): stats/$(MONTH)-%.csv.gz: | stats
+$(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | stats
 	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date" | gzip - > $@
+	$(PSQL) -c "COPY stat_$* \
+		(SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date) 
+		TO STDOUT HEADER TRUE" \
+	| gzip - > $@
 
 #
 # Feed-based stats
 #
-$(GTFSSTATS): %: stats/$(FEED)-%.csv.gz
+$(GTFSSTATS): %: stats/$(FEED)-%.tsv.gz
 
-$(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.csv.gz): stats/$(FEED)-%.csv.gz: | stats
+$(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | stats
 	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')" | gzip - > $@
+	$(PSQL) -c "COPY stat_$* \
+		(SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')) \
+		TO STDOUT HEADER TRUE" \
+	| gzip - > $@
 
 sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
 
