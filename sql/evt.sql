@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         month date,
         route_id text,
         direction_id int,
-        weekend boolean,
+        weekend int,
         period integer,
         count_trips integer,
         duration_avg_sched decimal,
@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         start_date,
         route_id,
         direction_id,
-        weekend,
+        weekend::int as weekend,
         period,
         COUNT(*) count_trips,
         ROUND(AVG(EXTRACT(EPOCH FROM sched.duration)::NUMERIC/60.), 2) duration_avg_sched,
@@ -29,8 +29,8 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
             trip_id,
             route_id,
             COUNT(*) AS stops,
-            (EXTRACT(isodow FROM "date") > 5 OR holiday IS NOT NULL) weekend,
-            day_period(wall_time("date", MIN(arrival_time::interval), 'US/Eastern')) period,
+            EXTRACT(isodow FROM d.date) > 5 OR holiday IS NOT NULL weekend,
+            day_period(wall_time(d.date, MIN(arrival_time::interval), 'US/Eastern')) period,
             MAX(arrival_time::INTERVAL) - MIN(arrival_time::interval) AS duration
         FROM get_date_trips("start", ("start" + "term")::date) d
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
@@ -63,7 +63,7 @@ CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
         month date,
         route_id text,
         direction_id int,
-        weekend boolean,
+        weekend int,
         period integer,
         count_trips integer,
         duration_avg_sched decimal,

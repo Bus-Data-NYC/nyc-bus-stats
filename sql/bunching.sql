@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend boolean,
+        weekend int,
         period int,
         count int,
         bunch_count int
@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         route_id,
         direction_id,
         stop_id,
-        EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL AS weekend,
+        (EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL)::int AS weekend,
         period,
         -- number of rows with both kinds of headway recorded
         COUNT(*)::int as count,
@@ -48,7 +48,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend boolean,
+        weekend int,
         period int,
         count int,
         bunch_count int

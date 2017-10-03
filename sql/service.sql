@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend boolean,
+        weekend int,
         period int,
         hours int,
         scheduled int,
@@ -19,7 +19,7 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         route_id,
         direction_id,
         stop_id,
-        EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL AS weekend,
+        (EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL)::int AS weekend,
         day_period_hour(hour) AS period,
         SUM(1),
         SUM(sh.pickups),
@@ -33,8 +33,8 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         AND sh.pickups > 0
         AND NOT exception
     GROUP BY rds_index,
-        weekend,
-        period
+        EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL,
+        day_period_hour(hour)
     $$
 LANGUAGE SQL STABLE;
 
@@ -44,7 +44,7 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend boolean,
+        weekend int,
         period int,
         hours int,
         scheduled int,
