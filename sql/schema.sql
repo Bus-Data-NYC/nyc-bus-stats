@@ -97,8 +97,8 @@ CREATE TABLE stat_bunching (
     stop_id text,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period integer NOT NULL CHECK (period BETWEEN 1 and 5),
-    call_count integer NOT NULL,
-    bunch_count integer NOT NULL,
+    count integer NOT NULL,
+    count_bunch integer NOT NULL,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
 
@@ -109,7 +109,7 @@ CREATE TABLE stat_bunching_average (
     stop_id text,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period integer NOT NULL CHECK (period BETWEEN 1 and 5),
-    call_count integer NOT NULL,
+    count integer NOT NULL,
     bunch_count integer NOT NULL,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
@@ -152,7 +152,8 @@ CREATE TABLE stat_evt (
     count_trips integer not null,
     duration_avg_sched decimal not null,
     duration_avg_obs decimal not null,
-    pct_late decimal not null,
+    count int not null,
+    count_late int not null,
     UNIQUE (month, route_id, direction_id, weekend, period) 
 );
 
@@ -238,7 +239,7 @@ CREATE TABLE stat_spacing(
     feed_index integer,
     route_id text,
     direction_id integer,
-    trip_count integer,
+    count_trip integer,
     wavg numeric,
     UNIQUE (feed_index, route_id, direction_id) 
 );
