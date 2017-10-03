@@ -29,8 +29,10 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         LEFT JOIN gtfs_trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays h USING ("date")
     WHERE
-        "date" >= "start"
-        AND "date" < ("start" + "term")::date
+        sched.date >= "start"
+        AND sched.date < ("start" + "term")::date
+        AND obs.date >= "start"
+        AND obs.date < ("start" + "term")::date
         AND sched.headway IS NOT NULL
         AND obs.headway IS NOT NULL
     GROUP BY
