@@ -227,6 +227,18 @@ CREATE TABLE stat_speed (
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
 
+CREATE TABLE stat_otd (
+    month date not null
+    route_id text not null,
+    direction_id int not null,
+    weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
+    period int CHECK (period BETWEEN 1 AND 5),
+    headsign text not null,
+    count int not null,
+    count_otd numeric,
+    CONSTRAINT otd_pk PRIMARY KEY (month, route_id, direction_id)
+);
+
 CREATE TABLE stat_routeratio (
     feed_index integer,
     route_id text,
