@@ -33,6 +33,8 @@ CALLSTATS = evt cewt otp otd bunching service speed
 MONTH = 2016-10
 FEED = 1
 
+OUTOPTS = TO STDOUT CSV HEADER DELIMITER '	'
+
 .PHONY: all init $(CALLSTATS) $(GTFSSTATS)
 
 all:
@@ -44,10 +46,8 @@ $(CALLSTATS): %: stats/$(MONTH)-%.tsv.gz
 
 $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | stats
 	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "COPY stat_$* \
-		(SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date) 
-		TO STDOUT HEADER TRUE" \
-	| gzip - > $@
+	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date) $(OUTOPTS)" \
+		| gzip - > $@
 
 #
 # Feed-based stats
@@ -56,10 +56,8 @@ $(GTFSSTATS): %: stats/$(FEED)-%.tsv.gz
 
 $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | stats
 	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "COPY stat_$* \
-		(SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')) \
-		TO STDOUT HEADER TRUE" \
-	| gzip - > $@
+	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')) $(OUTOPTS)" \
+		| gzip - > $@
 
 sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
 
