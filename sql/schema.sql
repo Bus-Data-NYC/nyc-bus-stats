@@ -221,8 +221,8 @@ CREATE TABLE stat_speed (
     stop_id text not null,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period integer not null CHECK (period BETWEEN 1 and 5),
-    distance numeric not null,
-    travel_time numeric not null,
+    distance int not null,
+    travel_time int not null,
     count integer not null,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );

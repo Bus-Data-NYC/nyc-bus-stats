@@ -10,8 +10,8 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         stop_id text,
         weekend int,
         period int,
-        distance numeric(12, 3),
-        travel_time numeric(12, 1),
+        distance int,
+        travel_time int,
         count int
     )
     AS $$
@@ -22,8 +22,8 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         stop_id,
         weekend::int AS weekend,
         period,
-        SUM(dist)::numeric(12, 3) distance,
-        EXTRACT(epoch from SUM(elapsed))::numeric(12, 1) travel_time,
+        SUM(dist)::int distance,
+        EXTRACT(epoch from SUM(elapsed))::int travel_time,
         COUNT(*)::int count
     FROM (
         SELECT
@@ -38,8 +38,8 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             LEFT JOIN gtfs_trips USING (trip_id, direction_id, route_id)
             LEFT JOIN gtfs_stop_times USING (trip_id, stop_id)
             LEFT JOIN stat_holidays h ON (h.date = (call_time AT TIME ZONE 'US/Eastern')::DATE)
-        WHERE source = 'I'
-            AND (call_time AT TIME ZONE 'US/Eastern')::DATE >= "start"
+        WHERE
+            (call_time AT TIME ZONE 'US/Eastern')::DATE >= "start"
             AND (call_time AT TIME ZONE 'US/Eastern')::DATE < ("start" + "term")::DATE
         WINDOW run AS (PARTITION BY vehicle_id, trip_id ORDER BY call_time ASC)
     ) raw
@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION get_speed ("start" date)
         route_id text,
         direction_id int,
         stop_id text,
-        weekend boolean,
+        weekend int,
         period int,
         distance numeric,
         travel_time numeric,
