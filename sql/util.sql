@@ -124,7 +124,15 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
             stop_id,
             wall_time(d.date, arrival_time, agency_timezone)::date AS date,
             day_period(EXTRACT(hours from arrival_time)::int) AS period,
-            wall_time(d.date, arrival_time, agency_timezone) - wall_time(lag(d.date) over (rds), lag(arrival_time) over (rds), agency_timezone) AS headway
+            /*
+             There exist duplicate dummy trips: two trips with same stoptime pattern.
+             One of the trips is a ghost, one is real. We don't know which one, so when
+             that happens, we give each the same headway by LAG-ing back one more step in the WINDOW.
+             */
+            CASE WHEN arrival_time != lag(arrival_time) over (rds)
+                THEN wall_time(d.date, arrival_time, agency_timezone) - wall_time(lag(d.date) over (rds), lag(arrival_time) over (rds), agency_timezone)
+                ELSE wall_time(d.date, arrival_time, agency_timezone) - wall_time(lag(d.date, 2) over (rds), lag(arrival_time, 2) over (rds), agency_timezone)
+            END AS headway
         FROM  -- list of dates beginning just before our interval
             get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d
             LEFT JOIN gtfs_agency USING (feed_index)
