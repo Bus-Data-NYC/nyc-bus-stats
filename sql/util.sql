@@ -74,27 +74,30 @@ LANGUAGE SQL IMMUTABLE;
 CREATE OR REPLACE FUNCTION get_date_trips(start date, finish date)
     RETURNS TABLE(feed_index integer, "date" date, trip_id text)
     AS $$
-        SELECT
-            feed_index, range.date, trip_id
-        FROM
-            date_range("start", "finish" - "start") range
-            LEFT JOIN gtfs_calendar c ON (
-                -- address the weekday columns of gtfs_calendar as an array, using the day-of-week as an index
-                (ARRAY[monday, tuesday, wednesday, thursday, friday, saturday, sunday])[extract(isodow from range.date)] = '1'
-                AND range.date BETWEEN c.start_date AND c.end_date
-            )
-            LEFT JOIN gtfs_calendar_dates USING (feed_index, date, service_id)
-            LEFT JOIN gtfs_trips USING (feed_index, service_id)
-        WHERE exception_type IS NULL
-        UNION
-        SELECT
-            feed_index, date, trip_id
-        FROM gtfs_trips
-            LEFT JOIN gtfs_calendar_dates AS gcd USING (feed_index, service_id)
-        WHERE
-            exception_type = 1
-            AND gcd.date >= "start"
-            AND gcd.date < "finish"
+        SELECT MAX(feed_index) feed_index,
+            a.date,
+            trip_id
+        FROM (
+            SELECT feed_index, range.date, trip_id
+            FROM date_range("start", "finish" - "start") range
+                LEFT JOIN gtfs_calendar c ON (
+                    -- address the weekday columns of gtfs_calendar as an array, using the day-of-week as an index
+                    (ARRAY[monday, tuesday, wednesday, thursday, friday, saturday, sunday])[extract(isodow from range.date)] = '1'
+                    AND range.date BETWEEN c.start_date AND c.end_date
+                )
+                LEFT JOIN gtfs_calendar_dates USING (feed_index, date, service_id)
+                LEFT JOIN gtfs_trips USING (feed_index, service_id)
+            WHERE exception_type IS NULL
+                AND trip_id IS NOT NULL
+            UNION
+            SELECT feed_index, date, trip_id
+            FROM gtfs_trips
+                LEFT JOIN gtfs_calendar_dates USING (feed_index, service_id)
+            WHERE exception_type = 1
+                AND date >= "start"
+                AND date < "finish"
+        ) a
+        GROUP BY date, trip_id
     $$
 LANGUAGE SQL STABLE;
 
