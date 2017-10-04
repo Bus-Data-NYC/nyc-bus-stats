@@ -30,8 +30,8 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
             route_id,
             COUNT(*) AS stops,
             EXTRACT(isodow FROM d.date) > 5 OR holiday IS NOT NULL weekend,
-            day_period(wall_time(d.date, MIN(arrival_time::interval), 'US/Eastern')) period,
-            MAX(arrival_time::INTERVAL) - MIN(arrival_time::interval) AS duration
+            day_period(wall_time(d.date, MIN(arrival_time), 'US/Eastern')) period,
+            MAX(arrival_time) - MIN(arrival_time) AS duration
         FROM get_date_trips("start", ("start" + "term")::date) d
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)

@@ -52,8 +52,10 @@ LANGUAGE SQL IMMUTABLE;
 
 -- generate the timestampz for a gtfs schedule date and time
 CREATE OR REPLACE FUNCTION wall_time(d date, t interval, zone text)
-    RETURNS timestamp with time zone AS $$
-        SELECT ("d" + '12:00'::time)::timestamp without time zone at time zone "zone" - interval '12 HOURS' + "t"
+    RETURNS timestamp AS $$
+        SELECT (
+            ("d" + time '12:00')::timestamp without time zone at time zone "zone" - interval '12 HOURS' + "t"
+        ) at time zone "zone"
     $$
 LANGUAGE SQL IMMUTABLE;
 
@@ -119,7 +121,7 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
             stop_id,
             wall_time(d.date, arrival_time, agency_timezone)::date AS date,
             day_period(EXTRACT(hours from arrival_time)::int) AS period,
-            arrival_time - LAG(arrival_time) OVER (rds) AS headway
+            wall_time(d.date, arrival_time, agency_timezone) - wall_time(lag(d.date) over (rds), lag(arrival_time) over (rds), agency_timezone) AS headway
         FROM  -- list of dates beginning just before our interval
             get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d
             LEFT JOIN gtfs_agency USING (feed_index)
