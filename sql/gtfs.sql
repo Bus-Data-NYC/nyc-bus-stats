@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS get_routeratio(integer[]);
-CREATE FUNCTION get_routeratio (feeds integer[])
+CREATE OR REPLACE FUNCTION get_routeratio (feeds integer[])
     RETURNS TABLE (
         feed_index integer,
         route_id text,
@@ -21,8 +20,7 @@ CREATE FUNCTION get_routeratio (feeds integer[])
     $$
 LANGUAGE SQL STABLE;
 
-DROP FUNCTION IF EXISTS get_routeratio (text[]);
-CREATE FUNCTION get_routeratio (text[])
+CREATE OR REPLACE FUNCTION get_routeratio (text[])
     RETURNS TABLE (
         feed_index integer,
         route_id text,
@@ -41,8 +39,7 @@ LANGUAGE SQL STABLE;
  * Routes se different shape geometries. Avg spacing is calculated for each shape
  * and weighted by the number of trips that use the shape.
  */
-DROP FUNCTION IF EXISTS get_spacing(integer[]);
-CREATE FUNCTION get_spacing(feeds integer[])
+CREATE OR REPLACE FUNCTION get_spacing(feeds integer[])
     RETURNS TABLE(
         feed_index integer,
         route_id text,
@@ -94,13 +91,12 @@ CREATE FUNCTION get_spacing(feeds integer[])
             WINDOW shape AS (PARTITION BY feed_index, shape_id ORDER BY dist_along_shape)
         ) a GROUP BY feed_index, shape_id
     ) spacing
-    USING (feed_index, shape_id)
+        USING (feed_index, shape_id)
     GROUP BY feed_index, route_id, direction_id
     $$
 LANGUAGE SQL STABLE;
 
-DROP FUNCTION IF EXISTS get_spacing (text[]);
-CREATE FUNCTION get_spacing (text[])
+CREATE OR REPLACE FUNCTION get_spacing (text[])
     RETURNS TABLE(
         feed_index integer,
         route_id text,
@@ -115,8 +111,7 @@ LANGUAGE SQL STABLE;
 
 -- minimum distance from each stop to nearest stop on same route-shape
 -- averaged for all stops on the route
-DROP FUNCTION IF EXISTS get_stopdist(integer[]);
-CREATE FUNCTION get_stopdist(feeds integer[])
+CREATE OR REPLACE FUNCTION get_stopdist(feeds integer[])
     RETURNS TABLE(feed_index integer, stop_id text, wavg numeric)
     AS $$
     SELECT
@@ -152,8 +147,7 @@ CREATE FUNCTION get_stopdist(feeds integer[])
     $$
 LANGUAGE SQL STABLE;
 
-DROP FUNCTION IF EXISTS get_stopdist (text[]);
-CREATE FUNCTION get_stopdist (text[])
+CREATE OR REPLACE FUNCTION get_stopdist (text[])
     RETURNS TABLE(feed_index integer, stop_id text, wavg numeric)
     AS $$
     SELECT * FROM get_stopdist(text2int($1))
