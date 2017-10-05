@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION get_routeratio (feeds integer[])
+CREATE OR REPLACE FUNCTION get_routeratio (feed integer)
     RETURNS TABLE (
         feed_index integer,
         route_id text,
@@ -15,12 +15,13 @@ CREATE OR REPLACE FUNCTION get_routeratio (feeds integer[])
         ROUND((ST_Length(the_geom) / ST_Distance(ST_StartPoint(the_geom), ST_EndPoint(the_geom)))::numeric, 2) routeratio
     FROM gtfs_shape_geoms
         LEFT JOIN gtfs_trips using (feed_index, shape_id)
-    WHERE ARRAY[feed_index] <@ feeds
+    WHERE feed_index = "feed"
+        AND route_id IS NOT NULL
     GROUP BY feed_index, route_id, direction_id, shape_id
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_routeratio (text[])
+CREATE OR REPLACE FUNCTION get_routeratio (feeds int[])
     RETURNS TABLE (
         feed_index integer,
         route_id text,
@@ -29,7 +30,8 @@ CREATE OR REPLACE FUNCTION get_routeratio (text[])
         routeratio numeric
     )
     AS $$
-    SELECT * FROM get_routeratio(text2int($1))
+    WITH a (feed) as (SELECT unnest(feeds))
+    SELECT b.* FROM a, get_routeratio(feed) b
     $$
 LANGUAGE SQL STABLE;
 
@@ -39,7 +41,7 @@ LANGUAGE SQL STABLE;
  * Routes se different shape geometries. Avg spacing is calculated for each shape
  * and weighted by the number of trips that use the shape.
  */
-CREATE OR REPLACE FUNCTION get_spacing(feeds integer[])
+CREATE OR REPLACE FUNCTION get_spacing(feed integer)
     RETURNS TABLE(
         feed_index integer,
         route_id text,
@@ -64,8 +66,7 @@ CREATE OR REPLACE FUNCTION get_spacing(feeds integer[])
             COUNT(*) AS count
         FROM gtfs_stop_times
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-        WHERE
-            ARRAY[feed_index] <@ $1
+        WHERE feed_index = "feed"
         GROUP BY
             feed_index,
             route_id,
@@ -86,8 +87,7 @@ CREATE OR REPLACE FUNCTION get_spacing(feeds integer[])
                 dist_along_shape - lag(dist_along_shape) OVER (shape) AS spacing
             FROM gtfs_shape_geoms
                 LEFT JOIN gtfs_stop_distances_along_shape s USING (feed_index, shape_id)
-            WHERE
-                ARRAY[feed_index] <@ $1
+            WHERE feed_index = "feed"
             WINDOW shape AS (PARTITION BY feed_index, shape_id ORDER BY dist_along_shape)
         ) a GROUP BY feed_index, shape_id
     ) spacing
@@ -96,7 +96,7 @@ CREATE OR REPLACE FUNCTION get_spacing(feeds integer[])
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_spacing (text[])
+CREATE OR REPLACE FUNCTION get_spacing (feeds int[])
     RETURNS TABLE(
         feed_index integer,
         route_id text,
@@ -105,13 +105,14 @@ CREATE OR REPLACE FUNCTION get_spacing (text[])
         wavg numeric
     )
     AS $$
-    SELECT * FROM get_spacing(text2int($1))
+    WITH a (feed) as (SELECT unnest(feeds))
+    SELECT b.* FROM a, get_spacing(feed) b
     $$
 LANGUAGE SQL STABLE;
 
 -- minimum distance from each stop to nearest stop on same route-shape
 -- averaged for all stops on the route
-CREATE OR REPLACE FUNCTION get_stopdist(feeds integer[])
+CREATE OR REPLACE FUNCTION get_stopdist(feed integer)
     RETURNS TABLE(feed_index integer, stop_id text, wavg numeric)
     AS $$
     SELECT
@@ -126,7 +127,7 @@ CREATE OR REPLACE FUNCTION get_stopdist(feeds integer[])
             LEAST(lead(dist_along_shape) OVER (shape) - dist_along_shape, dist_along_shape - lag(dist_along_shape) OVER (shape)) AS spacing
         FROM gtfs_shape_geoms
             LEFT JOIN gtfs_stop_distances_along_shape s USING (feed_index, shape_id)
-        WHERE ARRAY[feed_index] <@ $1
+        WHERE feed_index = "feed"
         WINDOW shape AS (PARTITION BY feed_index, shape_id ORDER BY dist_along_shape)
     ) dists
     LEFT JOIN (
@@ -137,7 +138,7 @@ CREATE OR REPLACE FUNCTION get_stopdist(feeds integer[])
             COUNT(*) AS count
         FROM gtfs_stop_times
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-        where ARRAY[feed_index] <@ $1
+        WHERE feed_index = "feed"
         GROUP BY
             feed_index,
             shape_id,
@@ -147,9 +148,10 @@ CREATE OR REPLACE FUNCTION get_stopdist(feeds integer[])
     $$
 LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_stopdist (text[])
+CREATE OR REPLACE FUNCTION get_stopdist (feeds int[])
     RETURNS TABLE(feed_index integer, stop_id text, wavg numeric)
     AS $$
-    SELECT * FROM get_stopdist(text2int($1))
+    WITH a (feed) as (SELECT unnest(feeds))
+    SELECT b.* FROM a, get_stopdist(feed) b
     $$
 LANGUAGE SQL STABLE;

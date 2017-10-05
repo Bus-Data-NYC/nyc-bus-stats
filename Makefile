@@ -35,6 +35,8 @@ FEED = 1
 
 OUTOPTS = TO STDOUT CSV HEADER DELIMITER '	'
 
+comma = ,
+
 .PHONY: all init $(CALLSTATS) $(GTFSSTATS)
 
 all:
@@ -55,8 +57,8 @@ $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | s
 $(GTFSSTATS): %: stats/$(FEED)-%.tsv.gz
 
 $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(string_to_array('$(FEED)', '-')) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE ARRAY[feed_index::text] <@ string_to_array('$(FEED)', '-')) $(OUTOPTS)" \
+	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(ARRAY[$(subst -,$(comma),$(FEED))]) ON CONFLICT DO NOTHING"; \
+	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE feed_index = ANY([$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
 		| gzip - > $@
 
 sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
