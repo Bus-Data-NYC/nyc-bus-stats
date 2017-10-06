@@ -18,9 +18,6 @@ git:
 env:
   global:
     - PG_DATABASE=postgres
-    - MONTH=2017-05
-    - DATE=2017-05-20
-    - FEED=1
 
   matrix:
     - TASK=routeratio
@@ -44,8 +41,8 @@ before_install:
 
 install: 
   - make -e init drop_constraints -C gtfs-sql-importer
-  - make -e init download -C mta-bus-archive
-  - make -e init
+  - make -e init download -C mta-bus-archive DATE=2017-05-20
+  - make -e init MONTH=2017-05
 
 before_script:
   - psql $PG_DATABASE -c "select postgis_full_version()"
