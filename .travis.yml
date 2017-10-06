@@ -12,6 +12,8 @@ addons:
     packages:
       - postgresql-9.5-postgis-2.3
 
+cache: pip
+
 git:
   depth: 3
 
@@ -19,6 +21,7 @@ env:
   global:
     - PG_DATABASE=postgres
     - DATE=2017-05-20
+    - INFERNOFLAGS=--quiet
 
   matrix:
     - TASK=routeratio
@@ -41,7 +44,10 @@ before_install:
 install: 
   - make -e init drop_constraints -C gtfs-sql-importer
   - pip install -r mta-bus-archive/requirements.txt
-  - make -e init download -C mta-bus-archive
+  - make -e init csv xz/bus_time_${DATE//-/}.csv.xz -C mta-bus-archive
+  # Limit the number of positions to speed up tests
+  - xz -d --stdout mta-bus-archive/xz/bus_time_${DATE//-/}.csv.xz | head -n 100000 > mta-bus-archive/csv/bus_time_${DATE//-/}.csv
+  - make -e download -C mta-bus-archive
   - make -e init calls-day-${DATE} -C inferno
   - make -e init MONTH=2017-05
 
