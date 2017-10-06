@@ -19,22 +19,25 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         route_id,
         direction_id,
         stop_id,
-        (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int AS weekend,
-        day_period_hour(hour) AS period,
-        SUM(1),
-        SUM(sh.pickups),
-        COALESCE(SUM(a.observed), 0)
+        (EXTRACT(isodow FROM sh.date) > 5 OR holiday IS NOT NULL)::int AS weekend,
+        day_period((call_time - deviation) at time zone 'US/Eastern') AS period,
+        day_period_length(day_period((call_time - deviation) at time zone 'US/Eastern')) hours,
+        COUNT(*)::int scheduled,
+        COUNT(nullif(false, calls.source = 'I'))::int observed
+
     FROM stat_headway_scheduled AS sh
         LEFT JOIN calls USING (date, trip_id, stop_id)
-        LEFT JOIN adherence AS a USING 
-        LEFT JOIN ref_holidays h USING (date)
-        JOIN ref_rds USING (rds_index)
+        LEFT JOIN stat_holidays h USING (date)
+
     WHERE sh.date >= "start"
         AND sh.date < ("start" + "term")::DATE
-        AND calls.source = 'I'
-    GROUP BY rds_index,
-        EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL,
-        day_period_hour(hour)
+
+    GROUP BY
+        route_id,
+        direction_id,
+        stop_id,
+        EXTRACT(isodow FROM sh.date) > 5 OR holiday IS NOT NULL,
+        day_period((call_time - deviation) at time zone 'US/Eastern')
     $$
 LANGUAGE SQL STABLE;
 
@@ -50,6 +53,16 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE)
         scheduled int,
         observed int
     ) AS $$
-    SELECT * FROM get_service("start", INTERVAL '1 MONTH')
+    SELECT
+        "start" as month,
+        route_id,
+        direction_id,
+        stop_id,
+        weekend,
+        period,
+        hours,
+        scheduled,
+        observed
+    FROM get_service("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
