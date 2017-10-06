@@ -18,6 +18,7 @@ git:
 env:
   global:
     - PG_DATABASE=postgres
+    - DATE=2017-05-20
 
   matrix:
     - TASK=routeratio
@@ -33,15 +34,15 @@ env:
 
 before_install:
   - psql --version
-  - git clone https://github.com/fitnr/gtfs-sql-importer.git
-  - git --git-dir gtfs-sql-importer/.git branch -v | grep master
-  - git clone https://github.com/Bus-Data-NYC/mta-bus-archive.git
-  - git --git-dir mta-bus-archive/.git branch -v | grep master
-  - pip install -r mta-bus-archive/requirements.txt
+  - git clone --depth 3 https://github.com/fitnr/gtfs-sql-importer.git
+  - git clone --depth 3 https://github.com/Bus-Data-NYC/mta-bus-archive.git
+  - git clone --depth 3 https://github.com/Bus-Data-NYC/inferno.git
 
 install: 
   - make -e init drop_constraints -C gtfs-sql-importer
-  - make -e init download -C mta-bus-archive DATE=2017-05-20
+  - pip install -r mta-bus-archive/requirements.txt
+  - make -e init download -C mta-bus-archive
+  - make -e init calls-day-${DATE} -C inferno
   - make -e init MONTH=2017-05
 
 before_script:
