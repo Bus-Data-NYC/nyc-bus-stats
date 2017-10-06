@@ -58,10 +58,9 @@ $(GTFSSTATS): %: stats/$(FEED)-%.tsv.gz
 
 $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | stats
 	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(ARRAY[$(subst -,$(comma),$(FEED))]) ON CONFLICT DO NOTHING"; \
-	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE feed_index = ANY([$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
+	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE feed_index = ANY(ARRAY[$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
 		| gzip - > $@
 
-sql = $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
 
 # Calculate headway for the given month.
 prepare: headway-observed headway-scheduled
@@ -70,7 +69,7 @@ headway-%:
 	$(PSQL) -c "INSERT INTO stat_headway_$* \
 		SELECT * FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '1 MONTH') ON CONFLICT DO NOTHING"
 
-init: $(sql)
-	$(PSQL) $(foreach x,$^,-f $x)
+init: $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
+	for f in $^; do $(PSQL) -f $$f; done
 
 stats: ; mkdir -p $@
