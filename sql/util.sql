@@ -1,11 +1,5 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION text2int(text[])
-    RETURNS integer[] AS $$
-        SELECT array_agg(n::integer) FROM unnest($1) AS n;
-    $$
-LANGUAGE SQL IMMUTABLE;
-
 -- All day is divided into five parts.
 CREATE OR REPLACE FUNCTION day_period (int)
     RETURNS integer AS $$

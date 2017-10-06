@@ -23,10 +23,10 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
         COUNT(NULLIF(false, deviation < interval '-1 min'))::int AS early,
         COUNT(NULLIF(false, deviation >= interval '-1 min' AND deviation <= interval '5 min'))::int AS on_time,
         COUNT(NULLIF(false, deviation > interval '5 min'))::int AS late
-    FROM calls
-        LEFT JOIN stat_holidays h ON (trip_start_date = h.date)
-    WHERE trip_start_date >= "start"
-        AND trip_start_date < "start" + "term"
+    FROM calls c
+        LEFT JOIN stat_holidays h using ("date")
+    WHERE c.date >= "start"
+        AND c.date < "start" + "term"
     GROUP BY
         route_id,
         direction_id,

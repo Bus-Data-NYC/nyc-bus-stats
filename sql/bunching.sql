@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         direction_id,
         stop_id,
         (EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL)::int AS weekend,
-        period,
+        sched.period,
         -- number of rows with both kinds of headway recorded
         COUNT(*)::int as count,
         -- number of rows where observed interval is less than 1/4 of scheduled interval
@@ -40,7 +40,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         direction_id,
         stop_id,
         EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL,
-        period
+        sched.period
     $$
 LANGUAGE SQL STABLE;
 

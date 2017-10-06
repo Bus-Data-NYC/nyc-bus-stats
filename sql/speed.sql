@@ -62,8 +62,8 @@ CREATE OR REPLACE FUNCTION get_speed ("start" date)
         stop_id text,
         weekend int,
         period int,
-        distance numeric,
-        travel_time numeric,
+        distance int,
+        travel_time int,
         count int
     )
     AS $$

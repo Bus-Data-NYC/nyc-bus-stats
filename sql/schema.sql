@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS stat_bunching_average;
 DROP TABLE IF EXISTS stat_adherence;
 DROP TABLE IF EXISTS stat_service;
 DROP TABLE IF EXISTS stat_otp;
-DROP TABLE IF EXISTS stat_cewt;
+DROP TABLE IF EXISTS stat_otd;
 DROP TABLE IF EXISTS stat_cewt;
 DROP TABLE IF EXISTS stat_wtp;
 DROP TABLE IF EXISTS stat_evt;
@@ -228,7 +228,7 @@ CREATE TABLE stat_speed (
 );
 
 CREATE TABLE stat_otd (
-    month date not null
+    month date not null,
     route_id text not null,
     direction_id int not null,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),

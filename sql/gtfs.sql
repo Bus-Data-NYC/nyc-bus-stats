@@ -51,9 +51,10 @@ CREATE OR REPLACE FUNCTION get_spacing(feed integer)
     )
     AS $$
     SELECT
+        feed_index,
         route_id,
         direction_id,
-        COUNT(DISTINCT trip_id) as trip_count,
+        COUNT(DISTINCT trip_id)::int as trip_count,
         AVG(spacing) as avg
     FROM (
         SELECT

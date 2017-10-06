@@ -61,7 +61,7 @@ $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | sta
 	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE feed_index = ANY([$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
 		| gzip - > $@
 
-sql = $(foreach x,schema functions gtfs $(CALLSTATS),sql/$x.sql)
+sql = $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
 
 # Calculate headway for the given month.
 prepare: headway-observed headway-scheduled
