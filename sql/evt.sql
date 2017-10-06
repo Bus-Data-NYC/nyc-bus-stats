@@ -10,8 +10,8 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         weekend int,
         period integer,
         count_trips integer,
-        duration_avg_sched decimal,
-        duration_avg_obs decimal,
+        duration_avg_sched numeric,
+        duration_avg_obs numeric,
         pct_late decimal
     ) AS $$
     SELECT
@@ -21,9 +21,9 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         weekend::int as weekend,
         period,
         COUNT(*) count_trips,
-        ROUND(AVG(EXTRACT(EPOCH FROM sched.duration)::NUMERIC/60.), 2) duration_avg_sched,
-        ROUND(AVG(EXTRACT(EPOCH FROM obs.duration)::NUMERIC/60.), 2) duration_avg_obs,
-        COUNT(NULLIF(false, obs.duration > sched.duration)) pct_late
+        AVG(EXTRACT(EPOCH FROM sched.duration)::NUMERIC/60.)::NUMERIC(10, 2) duration_avg_sched,
+        AVG(EXTRACT(EPOCH FROM obs.duration)::NUMERIC/60.)::NUMERIC(10, 2) duration_avg_obs,
+        COUNT(NULLIF(false, obs.duration > sched.duration))::decimal / COUNT(*)::decimal pct_late
     FROM (
         SELECT d.date,
             trip_id,
@@ -37,7 +37,8 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
             LEFT JOIN stat_holidays USING ("date")
         GROUP BY d.date, trip_id
-        ) sched LEFT JOIN (
+    ) sched
+        LEFT JOIN (
             SELECT
                 c.date,
                 trip_id,
@@ -66,8 +67,8 @@ CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
         weekend int,
         period integer,
         count_trips integer,
-        duration_avg_sched decimal,
-        duration_avg_obs decimal,
+        duration_avg_sched numeric,
+        duration_avg_obs numeric,
         pct_late decimal
     ) AS $$
         SELECT * FROM get_evt(start_date, INTERVAL '1 MONTH')
