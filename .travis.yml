@@ -1,0 +1,45 @@
+language: minimal
+
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.5"
+  apt:
+    packages:
+      - postgresql-9.5-postgis-2.3
+
+git:
+  depth: 3
+
+env:
+  global:
+    - PG_DATABASE=postgres
+    - MONTH=2017-05
+    - FEED=1
+
+  matrix:
+    - TASK=routeratio
+    - TASK=spacing
+    - TASK=evt
+    - TASK=prepare cewt
+    - TASK=otp
+    - TASK=otd
+    - TASK=prepare bunching
+    - TASK=service
+    - TASK=speed
+    - TASK=prepare wtp
+
+before_install:
+  - psql --version
+  - git clone https://github.com/fitnr/gtfs-sql-importer.git
+  - git clone https://github.com/Bus-Data-NYC/mta-bus-archive.git
+  - pip install -r mta-bus-archive/requirements.txt
+  - psql $PG_DATABASE -c "select postgis_full_version()"
+
+install: 
+  - make -e init drop_constraints -C gtfs-sql-importer
+  - make -e init download DATE=20170520 -C mta-bus-archive
+  - make -e init
+
+script: make -e $TASK
