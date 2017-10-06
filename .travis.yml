@@ -19,6 +19,7 @@ env:
   global:
     - PG_DATABASE=postgres
     - MONTH=2017-05
+    - DATE=2017-05-20
     - FEED=1
 
   matrix:
@@ -34,17 +35,19 @@ env:
     - TASK=prepare wtp
 
 before_install:
+  - psql --version
   - git clone https://github.com/fitnr/gtfs-sql-importer.git
+  - git --git-dir gtfs-sql-importer/.git branch -v | grep master
   - git clone https://github.com/Bus-Data-NYC/mta-bus-archive.git
+  - git --git-dir mta-bus-archive/.git branch -v | grep master
   - pip install -r mta-bus-archive/requirements.txt
 
 install: 
   - make -e init drop_constraints -C gtfs-sql-importer
-  - make -e init download DATE=20170520 -C mta-bus-archive
+  - make -e init download -C mta-bus-archive
   - make -e init
 
 before_script:
-  - psql --version
   - psql $PG_DATABASE -c "select postgis_full_version()"
 
 script: make -e $TASK
