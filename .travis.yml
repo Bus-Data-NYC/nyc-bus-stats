@@ -1,4 +1,7 @@
-language: minimal
+language: python
+
+python:
+  - 3.5
 
 services:
   - postgresql
@@ -31,15 +34,17 @@ env:
     - TASK=prepare wtp
 
 before_install:
-  - psql --version
   - git clone https://github.com/fitnr/gtfs-sql-importer.git
   - git clone https://github.com/Bus-Data-NYC/mta-bus-archive.git
   - pip install -r mta-bus-archive/requirements.txt
-  - psql $PG_DATABASE -c "select postgis_full_version()"
 
 install: 
   - make -e init drop_constraints -C gtfs-sql-importer
   - make -e init download DATE=20170520 -C mta-bus-archive
   - make -e init
+
+before_script:
+  - psql --version
+  - psql $PG_DATABASE -c "select postgis_full_version()"
 
 script: make -e $TASK
