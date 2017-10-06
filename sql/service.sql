@@ -19,19 +19,19 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         route_id,
         direction_id,
         stop_id,
-        (EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL)::int AS weekend,
+        (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int AS weekend,
         day_period_hour(hour) AS period,
         SUM(1),
         SUM(sh.pickups),
         COALESCE(SUM(a.observed), 0)
-    FROM schedule_hours AS sh
-        LEFT JOIN adherence AS a USING (date, route_id, direction_id, stop_id, hour)
+    FROM stat_headway_scheduled AS sh
+        LEFT JOIN calls USING (date, trip_id, stop_id)
+        LEFT JOIN adherence AS a USING 
         LEFT JOIN ref_holidays h USING (date)
         JOIN ref_rds USING (rds_index)
     WHERE sh.date >= "start"
-        AND sh.date < "start" + "term"
-        AND sh.pickups > 0
-        AND NOT exception
+        AND sh.date < ("start" + "term")::DATE
+        AND calls.source = 'I'
     GROUP BY rds_index,
         EXTRACT(isodow FROM "datetime") > 5 OR h.holiday IS NOT NULL,
         day_period_hour(hour)

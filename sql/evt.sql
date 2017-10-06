@@ -39,14 +39,14 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         GROUP BY d.date, trip_id
         ) sched LEFT JOIN (
             SELECT
-                (call_time AT TIME ZONE 'US/Eastern')::DATE AS date,
+                c.date,
                 trip_id,
                 COUNT(*) calls,
                 MAX(call_time) - MIN(call_time) AS duration
-            FROM calls
-            WHERE (call_time at time zone 'US/Eastern')::DATE >= start::DATE
-                AND (call_time at time zone 'US/Eastern')::DATE < "start" + "term"
-            GROUP BY (call_time at time zone 'US/Eastern')::DATE,
+            FROM calls c
+            WHERE c.date >= start::DATE
+                AND c.date < "start" + "term"
+            GROUP BY c.date,
                 trip_id
         ) obs USING (date, trip_id)
         WHERE obs.calls = sched.stops

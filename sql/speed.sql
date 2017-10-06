@@ -34,14 +34,14 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             stop_id,
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
-        FROM calls
+        FROM calls as c
             LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id, route_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id, stop_id)
-            LEFT JOIN stat_holidays h ON (h.date = (call_time AT TIME ZONE 'US/Eastern')::DATE)
+            LEFT JOIN stat_holidays h USING ("date")
         WHERE source = 'I'
-            AND (call_time AT TIME ZONE 'US/Eastern')::DATE >= "start"
-            AND (call_time AT TIME ZONE 'US/Eastern')::DATE < ("start" + "term")::DATE
-        WINDOW run AS (PARTITION BY vehicle_id, trip_id ORDER BY call_time ASC)
+            AND date >= "start"
+            AND date < ("start" + "term")::DATE
+        WINDOW run AS (PARTITION BY date, vehicle_id, trip_id ORDER BY call_time ASC)
     ) raw
     WHERE elapsed > INTERVAL '0'
         AND dist > 0

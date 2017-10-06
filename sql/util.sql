@@ -157,13 +157,12 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
     SELECT
         trip_id,
         stop_id,
-        -- The "date" of a call is the scheduled calendar date, so take deviation into account.
-        ((call_time - deviation) AT TIME ZONE 'US/Eastern')::date AS date,
+        c.date,
         day_period((call_time - deviation) AT TIME ZONE 'US/Eastern') as period,
         call_time - LAG(call_time) OVER (rds) AS headway
-    FROM calls
-    WHERE (call_time AT TIME ZONE 'US/Eastern')::date >= "start"
-        AND (call_time AT TIME ZONE 'US/Eastern')::date < ("start" + "term")::DATE
+    FROM calls as c
+    WHERE c.date >= "start"
+        AND c.date < ("start" + "term")::DATE
     WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;

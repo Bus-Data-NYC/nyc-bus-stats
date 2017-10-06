@@ -20,7 +20,7 @@ DROP TABLE IF EXISTS stat_stopdist;
 
 -- Add indices to calls table
 CREATE INDEX calls_rds ON calls (route_id, direction_id, stop_id);
-CREATE INDEX calls_date ON calls (((call_time AT TIME ZONE 'US/Eastern')::date));
+CREATE INDEX calls_date ON calls (date);
 
 BEGIN;
 
