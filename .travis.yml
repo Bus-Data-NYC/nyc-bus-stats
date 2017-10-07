@@ -45,10 +45,11 @@ before_install:
   - git clone https://gist.github.com/be056c2342e115c37e97d73719417bea.git gtfs
 
 install:
-  - make -e init drop_constraints -C gtfs-sql-importer
+  - make -e init drop_constraints drop_indices -C gtfs-sql-importer
   - pip install -r mta-bus-archive/requirements.txt
-  - while read line; do ls ${line##http*.com/} || curl --create-dirs -o ${line##htt*com/} $line; done < gtfs/feeds.txt
-  - find $HOME/public -name '*.zip' -exec make -e load gtfs-sql-importer GTFS={} \;
+  - while read line; do ls ~/${line##http*.com/} || curl --create-dirs -o ~/${line##htt*com/} $line; done < gtfs/feeds.txt
+  - find $HOME/public -name 'gtfs.zip' -exec make -e load -C gtfs-sql-importer GTFS={} \;
+  - make -e add_indices -C gtfs-sql-importer
   - make -e init csv xz/bus_time_${DATE//-/}.csv.xz -C mta-bus-archive
   # Limit the number of positions to speed up tests
   - xz -d --stdout mta-bus-archive/xz/bus_time_${DATE//-/}.csv.xz | head -n 100000 > mta-bus-archive/csv/bus_time_${DATE//-/}.csv
