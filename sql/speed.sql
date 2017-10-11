@@ -4,7 +4,8 @@
 -- Assumes time zone is US/Eastern.
 CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
-        "month" date,
+        "start" date,
+        interval interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -16,7 +17,8 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     )
     AS $$
     SELECT
-        "start" as month,
+        "start",
+        "interval",
         route_id,
         direction_id,
         stop_id,
@@ -35,13 +37,13 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
         FROM calls as c
-            LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id, route_id)
+            LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id, stop_id)
             LEFT JOIN stat_holidays h USING ("date")
         WHERE source = 'I'
             AND date >= "start"
             AND date < ("start" + "term")::DATE
-        WINDOW run AS (PARTITION BY date, vehicle_id, trip_id ORDER BY call_time ASC)
+        WINDOW run AS (PARTITION BY run_index ORDER BY call_time ASC)
     ) raw
     WHERE elapsed > INTERVAL '0'
         AND dist > 0
@@ -67,6 +69,15 @@ CREATE OR REPLACE FUNCTION get_speed ("start" date)
         count int
     )
     AS $$
-    SELECT * FROM get_speed("start", INTERVAL '1 MONTH')
+    SELECT start AS month,
+        route_id,
+        direction_id,
+        stop_id,
+        weekend,
+        period,
+        distance,
+        travel_time,
+        count
+    FROM get_speed("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
