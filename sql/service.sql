@@ -26,7 +26,8 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         COUNT(nullif(false, calls.source = 'I'))::int observed
 
     FROM stat_headway_scheduled AS sh
-        LEFT JOIN calls USING (date, trip_id, stop_id)
+        LEFT JOIN calls USING (feed_index, date, trip_id, stop_id)
+        LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
         LEFT JOIN stat_holidays h USING (date)
 
     WHERE sh.date >= "start"

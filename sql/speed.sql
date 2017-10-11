@@ -5,7 +5,7 @@
 CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
         "start" date,
-        interval interval,
+        "term" interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     AS $$
     SELECT
         "start",
-        "interval",
+        "term" term,
         route_id,
         direction_id,
         stop_id,
