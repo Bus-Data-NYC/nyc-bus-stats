@@ -32,6 +32,7 @@ CALLSTATS = evt cewt otp otd bunching service speed
 
 MONTH = 2016-10
 FEED = 1
+INTERVAL = 1 MONTH
 
 OUTOPTS = TO STDOUT CSV HEADER DELIMITER '	'
 
@@ -67,7 +68,7 @@ prepare: headway-observed headway-scheduled
 
 headway-%:
 	$(PSQL) -c "INSERT INTO stat_headway_$* \
-		SELECT * FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '1 MONTH') ON CONFLICT DO NOTHING"
+		SELECT * FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '$(INTERVAL)') ON CONFLICT DO NOTHING"
 
 init: $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
 	for f in $^; do $(PSQL) -f $$f; done

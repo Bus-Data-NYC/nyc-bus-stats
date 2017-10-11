@@ -23,6 +23,7 @@ env:
   global:
     - PG_DATABASE=postgres
     - MONTH=2017-05
+    - INTERVAL="2 DAYS"
 
   matrix:
     - TASK=routeratio
