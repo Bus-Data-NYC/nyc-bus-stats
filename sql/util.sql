@@ -184,7 +184,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         calls.date AS date,
         EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern')::integer AS hour,
         route_id,
-        c.direction_id,
+        calls.direction_id,
         stop_id,
         COUNT(*)::int AS observed,
         COUNT(NULLIF(false, deviation < interval '-5 minutes'))::int AS early_5,
@@ -208,7 +208,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         calls.date,
         EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern'),
         route_id,
-        c.direction_id,
+        calls.direction_id,
         stop_id
     $$
 LANGUAGE SQL STABLE;

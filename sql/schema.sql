@@ -148,10 +148,9 @@ CREATE TABLE stat_evt (
     direction_id int,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period integer not null CHECK (period BETWEEN 1 and 5),
-    count_trips integer not null,
     duration_avg_sched decimal not null,
     duration_avg_obs decimal not null,
-    count int not null,
+    count_trips int not null,
     count_late int not null,
     UNIQUE (month, route_id, direction_id, weekend, period) 
 );
@@ -160,7 +159,7 @@ CREATE TABLE stat_service (
     month date not null,
     route_id text not null,
     direction_id integer not null,
-    stop_id int not null,
+    stop_id text not null,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period integer not null CHECK (period BETWEEN 1 and 5),
     hours integer not null,
@@ -232,9 +231,8 @@ CREATE TABLE stat_otd (
     direction_id int not null,
     weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
     period int CHECK (period BETWEEN 1 AND 5),
-    headsign text not null,
     count int not null,
-    count_otd numeric,
+    count_otd int not null,
     CONSTRAINT otd_pk PRIMARY KEY (month, route_id, direction_id)
 );
 

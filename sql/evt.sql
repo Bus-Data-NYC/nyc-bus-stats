@@ -10,10 +10,10 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         direction_id int,
         weekend int,
         period integer,
-        count_trips integer,
         duration_avg_sched numeric,
         duration_avg_obs numeric,
-        pct_late decimal
+        count_trips integer,
+        count_late integer
     ) AS $$
     SELECT
         start,
@@ -22,10 +22,10 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         direction_id,
         weekend::int as weekend,
         period,
-        COUNT(*)::int count_trips,
         AVG(EXTRACT(EPOCH FROM sched.duration)::NUMERIC/60.)::NUMERIC(10, 2) duration_avg_sched,
         AVG(EXTRACT(EPOCH FROM obs.duration)::NUMERIC/60.)::NUMERIC(10, 2) duration_avg_obs,
-        COUNT(NULLIF(false, obs.duration > sched.duration))::decimal / COUNT(*)::decimal pct_late
+        COUNT(*)::int count_trips,
+        COUNT(NULLIF(false, obs.duration > sched.duration))::int count_late
     FROM (
         SELECT
             feed_index,
@@ -85,10 +85,10 @@ CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
         direction_id int,
         weekend int,
         period integer,
-        count_trips integer,
         duration_avg_sched numeric,
         duration_avg_obs numeric,
-        pct_late decimal
+        count_trips integer,
+        count_late integer
     ) AS $$
     SELECT
         month,
@@ -96,10 +96,10 @@ CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
         direction_id,
         weekend,
         period,
-        count_trips,
         duration_avg_sched,
         duration_avg_obs,
-        pct_late
+        count_trips,
+        count_late
     FROM get_evt(start_date, INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
