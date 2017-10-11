@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
         route_id,
         direction_id,
         stop_id,
-        (EXTRACT(isodow FROM call_time at time zone 'US/Eastern') > 5 OR h.holiday IS NOT NULL)::int AS weekend,
+        (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int AS weekend,
         day_period(call_time at time zone 'US/Eastern') AS period,
         COUNT(NULLIF(false, deviation < interval '-1 min'))::int AS early,
         COUNT(NULLIF(false, deviation >= interval '-1 min' AND deviation <= interval '5 min'))::int AS on_time,
@@ -32,7 +32,7 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
         route_id,
         direction_id,
         stop_id,
-        EXTRACT(isodow FROM call_time at time zone 'US/Eastern') > 5 OR h.holiday IS NOT NULL,
+        EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         day_period(call_time at time zone 'US/Eastern')
     $$
 LANGUAGE SQL STABLE;

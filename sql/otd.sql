@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION get_otd (start date, term interval)
         "term",
         route_id,
         direction_id,
-        (EXTRACT(isodow FROM date AT TIME ZONE 'US/Eastern') > 5 OR h.holiday IS NOT NULL)::int weekend,
+        (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int weekend,
         day_period(wall_time(date, arrival_time, 'US/Eastern')) AS period,
         count(*)::int count,
         count(nullif(false, c.call_time at time zone 'US/Eastern' - wall_time(date, arrival_time, 'US/Eastern') <= interval '3 min'))::int count_otd
@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION get_otd (start date, term interval)
     GROUP BY
         route_id,
         direction_id,
-        EXTRACT(isodow FROM date AT TIME ZONE 'US/Eastern') > 5 OR h.holiday IS NOT NULL,
+        EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         day_period(wall_time(date, arrival_time, 'US/Eastern'))
     $$
 LANGUAGE SQL STABLE;

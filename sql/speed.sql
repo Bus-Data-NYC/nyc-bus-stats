@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         COUNT(*)::int count
     FROM (
         SELECT
-            EXTRACT(isodow FROM call_time AT TIME ZONE 'US/Eastern') > 5 OR h.holiday IS NOT NULL weekend,
+            EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL weekend,
             day_period(call_time AT TIME ZONE 'US/Eastern') AS period,
             route_id,
             direction_id,

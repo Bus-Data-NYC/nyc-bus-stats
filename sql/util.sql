@@ -181,7 +181,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         late_30 integer
     ) AS $$
     SELECT
-        (call_time AT TIME ZONE 'US/Eastern' + deviation)::date AS date,
+        calls.date AS date,
         EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern')::integer AS hour,
         route_id,
         direction_id,
@@ -196,15 +196,17 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         COUNT(NULLIF(false, deviation > interval '900 seconds'))::int AS late_15,
         COUNT(NULLIF(false, deviation > interval '1200 seconds'))::int AS late_20,
         COUNT(NULLIF(false, deviation > interval '1800 seconds'))::int AS late_30
+
     FROM calls
         LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
 
     WHERE source = 'I'
-        AND (call_time AT TIME ZONE 'US/Eastern')::date + deviation
-            BETWEEN "start" AND "start" + "term"
+        AND calls.date - deviation >= "start"
+        AND calls.date - deviation < "start" + "term"
+
     GROUP BY
-        1,
-        2,
+        calls.date,
+        EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern'),
         route_id,
         direction_id,
         stop_id
