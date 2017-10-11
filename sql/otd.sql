@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION get_otd (start date, term interval)
         "start",
         "term",
         route_id,
-        direction_id,
+        c.direction_id,
         (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int weekend,
         day_period(wall_time(date, arrival_time, 'US/Eastern')) AS period,
         count(*)::int count,
@@ -24,13 +24,13 @@ CREATE OR REPLACE FUNCTION get_otd (start date, term interval)
     FROM get_date_trips("start", ("start" + "term")::DATE) d
         LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
         LEFT JOIN calls c USING (feed_index, trip_id, "date", stop_id)
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
+        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays h USING ("date")
     WHERE
         stop_sequence = 3
     GROUP BY
         route_id,
-        direction_id,
+        c.direction_id,
         EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         day_period(wall_time(date, arrival_time, 'US/Eastern'))
     $$

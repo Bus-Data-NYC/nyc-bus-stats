@@ -155,10 +155,10 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         day_period((call_time - deviation) AT TIME ZONE 'US/Eastern') as period,
         call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls as c
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
+        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
     WHERE c.date >= "start"
         AND c.date < ("start" + "term")::DATE
-    WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY call_time)
+    WINDOW rds AS (PARTITION BY route_id, c.direction_id, stop_id ORDER BY call_time)
     $$
 LANGUAGE SQL STABLE;
 
@@ -184,7 +184,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         calls.date AS date,
         EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern')::integer AS hour,
         route_id,
-        direction_id,
+        c.direction_id,
         stop_id,
         COUNT(*)::int AS observed,
         COUNT(NULLIF(false, deviation < interval '-5 minutes'))::int AS early_5,
@@ -198,7 +198,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         COUNT(NULLIF(false, deviation > interval '1800 seconds'))::int AS late_30
 
     FROM calls
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
+        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
 
     WHERE source = 'I'
         AND calls.date - deviation >= "start"
@@ -208,7 +208,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         calls.date,
         EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern'),
         route_id,
-        direction_id,
+        c.direction_id,
         stop_id
     $$
 LANGUAGE SQL STABLE;

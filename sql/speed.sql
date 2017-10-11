@@ -32,12 +32,12 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL weekend,
             day_period(call_time AT TIME ZONE 'US/Eastern') AS period,
             route_id,
-            direction_id,
+            c.direction_id,
             stop_id,
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
         FROM calls as c
-            LEFT JOIN gtfs_trips USING (feed_index, trip_id, direction_id)
+            LEFT JOIN gtfs_trips USING (feed_index, trip_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id, stop_id)
             LEFT JOIN stat_holidays h USING ("date")
         WHERE source = 'I'
