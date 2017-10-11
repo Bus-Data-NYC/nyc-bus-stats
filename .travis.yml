@@ -22,42 +22,39 @@ git:
 env:
   global:
     - PG_DATABASE=postgres
-    - DATE=2017-05-19
-    - INFERNOFLAGS=--quiet
+    - MONTH=2017-05
 
   matrix:
     - TASK=routeratio
     - TASK=spacing
     - TASK=evt
-    - TASK=prepare cewt
+    - TASK="prepare cewt"
     - TASK=otp
     - TASK=otd
-    - TASK=prepare bunching
+    - TASK="prepare bunching"
     - TASK=service
     - TASK=speed
-    - TASK=prepare wtp
+    - TASK="prepare wtp"
 
 before_install:
   - psql --version
   - git clone --depth 3 https://github.com/fitnr/gtfs-sql-importer.git
-  - git clone --depth 3 https://github.com/Bus-Data-NYC/mta-bus-archive.git
   - git clone --depth 3 https://github.com/Bus-Data-NYC/inferno.git
-  - git clone https://gist.github.com/be056c2342e115c37e97d73719417bea.git gtfs
+  # gtfs-sql-importer wants a zip
+  - zip -1jr gtfs-sql-importer/gtfs.zip data/test/*.txt
 
 install:
-  - make -e init drop_constraints drop_indices -C gtfs-sql-importer
-  - pip install -r mta-bus-archive/requirements.txt
-  - while read line; do ls ~/${line##http*.com/} || curl --create-dirs -o ~/${line##htt*com/} $line; done < gtfs/feeds.txt
-  - find $HOME/public -name 'gtfs.zip' -exec make -e load -C gtfs-sql-importer GTFS={} \;
-  - make -e add_indices -C gtfs-sql-importer
-  - make -e init csv xz/bus_time_${DATE//-/}.csv.xz -C mta-bus-archive
-  # Limit the number of positions to speed up tests
-  - xz -d --stdout mta-bus-archive/xz/bus_time_${DATE//-/}.csv.xz | head -n 100000 > mta-bus-archive/csv/bus_time_${DATE//-/}.csv
-  - make -e download -C mta-bus-archive
-  - make -e init calls-day-${DATE} -C inferno
-  - make -e init MONTH=2017-05
+  - psql $PG_DATABASE -f inferno/sql/calls.sql
+  - make -e init drop_constraints drop_indices load add_indices GTFS=gtfs.zip -C gtfs-sql-importer
+  - psql $PG_DATABASE -c "alter table gtfs_shape_geoms alter column feed_index set default 1"
+  - psql $PG_DATABASE -c "alter table calls alter column feed_index set default 1"
+  - psql $PG_DATABASE -c "\copy calls (trip_id, deviation, call_time, stop_id, vehicle_id, direction_id, source, date, run_index) from 'data/test/calls.txt' csv header"
+  - psql $PG_DATABASE -c "\copy gtfs_shape_geoms (shape_id, length, the_geom) from 'data/test/shape_geoms.txt' csv header"
+  - make -e init
 
 before_script:
   - psql $PG_DATABASE -c "select postgis_full_version()"
 
 script: make -e $TASK
+
+after_script: psql $PG_DATABASE -c "select * from stat_${TASK##* } limit 25"

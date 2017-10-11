@@ -1,0 +1,4 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order
+QM1,MTABC,QM1,Fresh Meadows - Midtown Via 6 Av,Via 188Th St / Union Turnpike,3,http://web.mta.info/busco/schedules/qm001cur.pdf,00933C,FFFFFF,
+B42,MTA NYCT,B42,Canarsie Pier - Rockaway Parkway Station,via Rockaway Pkwy,3,http://web.mta.info/nyct/bus/schedule/bkln/b042cur.pdf,006CB7,FFFFFF,
+S78,MTA NYCT,S78,St. George - Bricktown Mall,via Hylan Blvd,3,http://web.mta.info/nyct/bus/schedule/staten/s078cur.pdf,FAA61A,FFFFFF,
