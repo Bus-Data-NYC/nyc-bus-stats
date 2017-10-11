@@ -26,9 +26,9 @@ CREATE OR REPLACE FUNCTION day_period (timestamp)
     $$
 LANGUAGE SQL IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION day_period (timestamp with time zone)
+CREATE OR REPLACE FUNCTION day_period (timestamp with time zone, tz text default 'US/Eastern')
     RETURNS integer AS $$
-    SELECT day_period(EXTRACT(HOUR FROM $1 AT TIME ZONE 'US/Eastern')::integer)
+    SELECT day_period(EXTRACT(HOUR FROM $1 AT TIME ZONE tz)::integer)
     $$
 LANGUAGE SQL IMMUTABLE;
 
@@ -152,10 +152,11 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         trip_id,
         stop_id,
         c.date,
-        day_period((call_time - deviation) AT TIME ZONE 'US/Eastern') as period,
+        day_period((call_time - deviation) AT TIME ZONE agency_timezone) as period,
         call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls as c
         LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs_agency USING (feed_index)
     WHERE c.date >= "start"
         AND c.date < ("start" + "term")::DATE
     WINDOW rds AS (PARTITION BY route_id, c.direction_id, stop_id ORDER BY call_time)
@@ -182,7 +183,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
     ) AS $$
     SELECT
         calls.date AS date,
-        EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern')::integer AS hour,
+        EXTRACT(HOUR FROM call_time AT TIME ZONE agency_timezone)::integer AS hour,
         route_id,
         calls.direction_id,
         stop_id,
@@ -199,6 +200,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
 
     FROM calls
         LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs_agency USING (feed_index)
 
     WHERE source = 'I'
         AND calls.date - deviation >= "start"
@@ -206,7 +208,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
 
     GROUP BY
         calls.date,
-        EXTRACT(HOUR FROM call_time AT TIME ZONE 'US/Eastern'),
+        EXTRACT(HOUR FROM call_time AT TIME ZONE agency_timezone),
         route_id,
         calls.direction_id,
         stop_id

@@ -1,7 +1,6 @@
 -- Speed is given by the distance covered and time elapsed between each call and the previous call
 -- Uses only imputed calls.
 -- Assumes that trip_id does not repeat across feed_indices.
--- Assumes time zone is US/Eastern.
 CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
         "start" date,
@@ -30,7 +29,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     FROM (
         SELECT
             EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL weekend,
-            day_period(call_time AT TIME ZONE 'US/Eastern') AS period,
+            day_period(call_time AT TIME ZONE agency_timezone) AS period,
             route_id,
             c.direction_id,
             stop_id,
@@ -40,6 +39,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             LEFT JOIN gtfs_trips USING (feed_index, trip_id)
             LEFT JOIN gtfs_stop_times USING (feed_index, trip_id, stop_id)
             LEFT JOIN stat_holidays h USING ("date")
+            LEFT JOIN gtfs_agency USING (feed_index)
         WHERE source = 'I'
             AND date >= "start"
             AND date < ("start" + "term")::DATE

@@ -41,13 +41,14 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
                 d.date,
                 trip_id,
                 EXTRACT(isodow FROM d.date) > 5 OR holiday IS NOT NULL as weekend,
-                day_period(wall_time(d.date, arrival_time, 'US/Eastern')) period,
+                day_period(wall_time(d.date, arrival_time, agency_timezone)) period,
                 arrival_time
             FROM
                 get_date_trips("start", ("start" + "term")::date) as d
                 LEFT JOIN gtfs_trips USING (feed_index, trip_id)
                 LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
                 LEFT JOIN stat_holidays USING ("date")
+                LEFT JOIN gtfs_agency USING (feed_index)
             ) x
         GROUP BY
             feed_index,
