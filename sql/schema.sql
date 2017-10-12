@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS stat_adherence;
 DROP TABLE IF EXISTS stat_service;
 DROP TABLE IF EXISTS stat_otp;
 DROP TABLE IF EXISTS stat_otd;
+DROP TABLE IF EXISTS stat_ewt;
 DROP TABLE IF EXISTS stat_cewt;
 DROP TABLE IF EXISTS stat_wtp;
 DROP TABLE IF EXISTS stat_evt;
@@ -181,6 +182,20 @@ CREATE TABLE stat_otp (
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
 
+CREATE TABLE stat_ewt (
+  month date NOT NULL,
+  route_id text NOT NULL,
+  direction_id int NOT NULL,
+  stop_id int NOT NULL,
+  weekend smallint NOT NULL CHECK (weekend IN (0, 1)),
+  period integer not null CHECK (period BETWEEN 1 and 5),
+  scheduled_hf int NOT NULL,
+  wswt int NOT NULL,
+  observed_hf int NOT NULL,
+  wawt int NOT NULL,
+  PRIMARY KEY (month, route_id, direction_id, stop_id, weekend, period)
+);
+
 CREATE TABLE stat_cewt (
     month date not null,
     route_id text,
@@ -190,9 +205,7 @@ CREATE TABLE stat_cewt (
     period integer not null CHECK (period BETWEEN 1 and 5),
     count int not null,
     count_cewt int not null,
-    scheduled integer not null,
-    observed integer not null,
-    wawt int not null,
+    cewt_avg numeric not null,
     UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
 );
 
