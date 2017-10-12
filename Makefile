@@ -28,7 +28,7 @@ endif
 PSQL = psql $(PSQLFLAGS)
 
 GTFSSTATS = routeratio spacing
-CALLSTATS = evt cewt otp otd bunching service speed
+CALLSTATS = evt cewt otp otd bunching service speed wtp
 
 MONTH = 2016-10
 FEED = 1

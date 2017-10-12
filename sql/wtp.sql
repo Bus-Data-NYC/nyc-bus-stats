@@ -6,41 +6,43 @@
 CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
     RETURNS TABLE(
         "month" date,
+        "term" interval,
         route_id text,
         direction_id int,
         stop_id text,
         weekend int,
         period int,
         calls int,
-        wtp5 int,
-        wtp10 int,
-        wtp15 int,
-        wtp20 int,
-        wtp30 int
+        wtp_5 numeric(4, 2),
+        wtp_10 numeric(4, 2),
+        wtp_15 numeric(4, 2),
+        wtp_20 numeric(4, 2),
+        wtp_30 numeric(4, 2)
     ) AS $$
     SELECT
-        "start" month,
+        "start" as month,
+        "term" as term,
         route_id,
         direction_id,
         stop_id,
-        (EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL)::int AS weekend,
+        (EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL)::int AS weekend,
         period,
         COUNT(*)::int AS calls,
-        SUM(LEAST(EXTRACT(epoch FROM headway),  5 * 60)) / day_period_length(day_period("datetime")) wtp5,
-        SUM(LEAST(EXTRACT(epoch FROM headway), 10 * 60)) / day_period_length(day_period("datetime")) wtp10,
-        SUM(LEAST(EXTRACT(epoch FROM headway), 15 * 60)) / day_period_length(day_period("datetime")) wtp15,
-        SUM(LEAST(EXTRACT(epoch FROM headway), 20 * 60)) / day_period_length(day_period("datetime")) wtp20,
-        SUM(LEAST(EXTRACT(epoch FROM headway), 30 * 60)) / day_period_length(day_period("datetime")) wtp30
+        (SUM(LEAST(EXTRACT(epoch FROM headway) / 60,  5)) / day_period_length(period) * 60)::numeric AS wtp_5,
+        (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 10)) / day_period_length(period) * 60)::numeric AS wtp_10,
+        (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 15)) / day_period_length(period) * 60)::numeric AS wtp_15,
+        (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 20)) / day_period_length(period) * 60)::numeric AS wtp_20,
+        (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 30)) / day_period_length(period) * 60)::numeric AS wtp_30
     FROM stat_headway_observed
         LEFT JOIN gtfs_trips USING (trip_id)
-        LEFT JOIN stat_holidays h USING ("date")
-    WHERE "date" >= "start"
-            "date" < ("start" + "term")::DATE
+        LEFT JOIN stat_holidays h USING (date)
+    WHERE date >= "start"
+        AND date < ("start" + "term")::DATE
     GROUP BY 
         route_id,
         direction_id,
         stop_id,
-        EXTRACT(isodow FROM "date") > 5 OR h.holiday IS NOT NULL,
+        EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         period
     $$
 LANGUAGE SQL STABLE;
@@ -53,11 +55,26 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE)
         stop_id text,
         weekend int,
         period int,
-        hours int,
-        wtp5 int,
-        wtp15 int,
-        wtp30 int
+        calls int,
+        wtp_5 numeric(4, 2),
+        wtp_10 numeric(4, 2),
+        wtp_15 numeric(4, 2),
+        wtp_20 numeric(4, 2),
+        wtp_30 numeric(4, 2)
     ) AS $$
-    SELECT * FROM get_wtp(start_date, INTERVAL '1 MONTH' - INTERVAL '1 DAY')
+    SELECT
+        month,
+        route_id,
+        direction_id,
+        stop_id,
+        weekend,
+        period,
+        calls,
+        wtp_5,
+        wtp_10,
+        wtp_15,
+        wtp_20,
+        wtp_30
+    FROM get_wtp("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
