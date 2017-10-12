@@ -30,7 +30,8 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
     WHERE 
         obs.date >= "start"
         and obs.date < ("start" + "term")::DATE
-
+        AND obs.headway IS NOT NULL
+        AND sched.headway IS NOT NULL
     GROUP BY
         route_id,
         direction_id,
