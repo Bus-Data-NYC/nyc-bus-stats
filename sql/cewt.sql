@@ -1,8 +1,6 @@
 -- cewt
 CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
     RETURNS TABLE(
-        start date,
-        term interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -14,8 +12,6 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
     )
     AS $$
     SELECT
-        start,
-        term,
         route_id,
         direction_id,
         stop_id,
@@ -41,31 +37,5 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
         stop_id,
         EXTRACT(isodow FROM obs.date) > 5 OR holiday IS NOT NULL,
         obs.period
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_cewt (start_date DATE)
-    RETURNS TABLE(
-        start date,
-        route_id text,
-        direction_id int,
-        stop_id text,
-        weekend int,
-        period int,
-        count int,
-        count_cewt int,
-        cewt_avg numeric(10, 2)
-    ) AS $$
-    SELECT
-        start,
-        route_id,
-        direction_id,
-        stop_id,
-        weekend,
-        period,
-        count,
-        count_cewt,
-        cewt_avg
-    FROM get_cewt(start_date, interval '1 month')
     $$
 LANGUAGE SQL STABLE;

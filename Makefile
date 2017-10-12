@@ -48,8 +48,8 @@ all:
 $(CALLSTATS): %: stats/$(MONTH)-%.tsv.gz
 
 $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*('$(MONTH)-01'::date) ON CONFLICT DO NOTHING"
-	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE month = '$(MONTH)-01'::date) $(OUTOPTS)" \
+	$(PSQL) -c "INSERT INTO stat_$* SELECT DATE '$(MONTH)-01' as month, * FROM get_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
+	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE month = '$(MONTH)-01') $(OUTOPTS)" \
 		| gzip - > $@
 
 #
@@ -68,7 +68,7 @@ prepare: headway-observed headway-scheduled
 
 headway-%:
 	$(PSQL) -c "INSERT INTO stat_headway_$* \
-		SELECT * FROM get_headway_$*('$(MONTH)-01'::date, INTERVAL '$(INTERVAL)') ON CONFLICT DO NOTHING"
+		SELECT * FROM get_headway_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
 
 init: $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
 	for f in $^; do $(PSQL) -f $$f; done

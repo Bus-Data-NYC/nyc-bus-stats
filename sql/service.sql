@@ -2,8 +2,6 @@
 
 CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
     RETURNS TABLE(
-        start date,
-        term interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -14,8 +12,6 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         observed int
     ) AS $$
     SELECT
-        "start" AS start,
-        "term",
         route_id,
         t.direction_id,
         stop_id,
@@ -41,31 +37,5 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         stop_id,
         EXTRACT(isodow FROM sh.date) > 5 OR holiday IS NOT NULL,
         day_period(wall_time(sh.date, arrival_time, agency_timezone))
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_service ("start" DATE)
-    RETURNS TABLE(
-        month date,
-        route_id text,
-        direction_id int,
-        stop_id text,
-        weekend int,
-        period int,
-        hours int,
-        scheduled int,
-        observed int
-    ) AS $$
-    SELECT
-        "start" as month,
-        route_id,
-        direction_id,
-        stop_id,
-        weekend,
-        period,
-        hours,
-        scheduled,
-        observed
-    FROM get_service("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

@@ -4,8 +4,6 @@
 
 CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
     RETURNS TABLE(
-        month date,
-        term interval,
         route_id text,
         direction_id int,
         weekend int,
@@ -16,8 +14,6 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         count_late integer
     ) AS $$
     SELECT
-        start,
-        term,
         route_id,
         direction_id,
         weekend::int as weekend,
@@ -76,31 +72,5 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
         direction_id,
         weekend,
         period
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_evt (start_date DATE)
-    RETURNS TABLE(
-        month date,
-        route_id text,
-        direction_id int,
-        weekend int,
-        period integer,
-        duration_avg_sched numeric,
-        duration_avg_obs numeric,
-        count_trips integer,
-        count_late integer
-    ) AS $$
-    SELECT
-        month,
-        route_id,
-        direction_id,
-        weekend,
-        period,
-        duration_avg_sched,
-        duration_avg_obs,
-        count_trips,
-        count_late
-    FROM get_evt(start_date, INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

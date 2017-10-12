@@ -1,7 +1,5 @@
 CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
     RETURNS TABLE(
-        start date,
-        term interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -13,8 +11,6 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
     )
     AS $$
     SELECT
-        "start",
-        "term",
         route_id,
         c.direction_id,
         stop_id,
@@ -35,24 +31,5 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
         stop_id,
         EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         day_period(call_time at time zone agency_timezone)
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_otp (start date)
-    RETURNS TABLE(
-        month date,
-        route_id text,
-        direction_id int,
-        stop_id text,
-        weekend int,
-        period int,
-        early int,
-        on_time int,
-        late int
-    )
-    AS $$
-    SELECT start AS month, route_id, direction_id, stop_id,
-        weekend, period, early, on_time, late
-    FROM get_otp(start, '1 MONTH'::INTERVAL)
     $$
 LANGUAGE SQL STABLE;

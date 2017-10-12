@@ -3,8 +3,6 @@
 -- Assumes that trip_id does not repeat across feed_indices.
 CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     RETURNS TABLE(
-        "start" date,
-        "term" interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -16,8 +14,6 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
     )
     AS $$
     SELECT
-        "start",
-        "term" term,
         route_id,
         direction_id,
         stop_id,
@@ -53,31 +49,5 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         stop_id,
         weekend,
         period
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_speed ("start" date)
-    RETURNS TABLE(
-        "month" date,
-        route_id text,
-        direction_id int,
-        stop_id text,
-        weekend int,
-        period int,
-        distance int,
-        travel_time int,
-        count int
-    )
-    AS $$
-    SELECT start AS month,
-        route_id,
-        direction_id,
-        stop_id,
-        weekend,
-        period,
-        distance,
-        travel_time,
-        count
-    FROM get_speed("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;

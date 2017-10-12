@@ -5,8 +5,6 @@
 
 CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
     RETURNS TABLE(
-        "month" date,
-        "term" interval,
         route_id text,
         direction_id int,
         stop_id text,
@@ -20,8 +18,6 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         wtp_30 numeric(4, 2)
     ) AS $$
     SELECT
-        "start" as month,
-        "term" as term,
         route_id,
         direction_id,
         stop_id,
@@ -44,37 +40,5 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         stop_id,
         EXTRACT(isodow FROM date) > 5 OR h.holiday IS NOT NULL,
         period
-    $$
-LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_wtp ("start" DATE)
-    RETURNS TABLE(
-        "month" date,
-        route_id text,
-        direction_id int,
-        stop_id text,
-        weekend int,
-        period int,
-        calls int,
-        wtp_5 numeric(4, 2),
-        wtp_10 numeric(4, 2),
-        wtp_15 numeric(4, 2),
-        wtp_20 numeric(4, 2),
-        wtp_30 numeric(4, 2)
-    ) AS $$
-    SELECT
-        month,
-        route_id,
-        direction_id,
-        stop_id,
-        weekend,
-        period,
-        calls,
-        wtp_5,
-        wtp_10,
-        wtp_15,
-        wtp_20,
-        wtp_30
-    FROM get_wtp("start", INTERVAL '1 MONTH')
     $$
 LANGUAGE SQL STABLE;
