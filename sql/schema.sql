@@ -85,9 +85,9 @@ CREATE TABLE stat_headway_observed (
     stop_id text NOT NULL,
     "date" date NOT NULL,
     period int not null,
-    headway interval DEFAULT NULL
+    headway interval DEFAULT NULL,
+    PRIMARY KEY (trip_id, stop_id, date)
 );
-CREATE INDEX stat_hwob_idx ON stat_headway_observed (trip_id, stop_id);
 CREATE INDEX stat_hwob_date ON stat_headway_observed ("date");
 
 CREATE TABLE stat_bunching (
