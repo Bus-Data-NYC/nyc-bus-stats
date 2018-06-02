@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
     FROM
         stat_headway_observed obs
         INNER JOIN stat_headway_scheduled sched USING (trip_id, stop_id, date)
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs.trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays AS h USING ("date")
 
     WHERE 

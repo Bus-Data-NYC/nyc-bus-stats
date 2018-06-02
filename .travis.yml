@@ -47,10 +47,10 @@ before_install:
 install:
   - psql $PG_DATABASE -f inferno/sql/calls.sql
   - make -e init drop_constraints drop_indices load add_indices GTFS=gtfs.zip -C gtfs-sql-importer
-  - psql $PG_DATABASE -c "alter table gtfs_shape_geoms alter column feed_index set default 1"
+  - psql $PG_DATABASE -c "alter table gtfs.shape_geoms alter column feed_index set default 1"
   - psql $PG_DATABASE -c "alter table calls alter column feed_index set default 1"
   - psql $PG_DATABASE -c "\copy calls (trip_id, deviation, call_time, stop_id, vehicle_id, direction_id, source, date, run_index) from 'data/test/calls.txt' csv header"
-  - psql $PG_DATABASE -c "\copy gtfs_shape_geoms (shape_id, length, the_geom) from 'data/test/shape_geoms.txt' csv header"
+  - psql $PG_DATABASE -c "\copy gtfs.shape_geoms (shape_id, length, the_geom) from 'data/test/shape_geoms.txt' csv header"
   - make -e init
 
 before_script:

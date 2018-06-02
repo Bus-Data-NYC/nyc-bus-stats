@@ -41,10 +41,10 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
                 arrival_time
             FROM
                 get_date_trips("start", ("start" + "term")::date) as d
-                LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-                LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
+                LEFT JOIN gtfs.trips USING (feed_index, trip_id)
+                LEFT JOIN gtfs.stop_times USING (feed_index, trip_id)
                 LEFT JOIN stat_holidays USING ("date")
-                LEFT JOIN gtfs_agency USING (feed_index)
+                LEFT JOIN gtfs.agency USING (feed_index)
             ) x
         GROUP BY
             feed_index,
@@ -65,7 +65,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
             GROUP BY c.date,
                 trip_id
         ) obs USING (date, trip_id)
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs.trips USING (feed_index, trip_id)
     WHERE obs.calls = sched.stops
     GROUP BY
         route_id,

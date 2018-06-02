@@ -13,7 +13,7 @@ FROM (
         *
     FROM
         get_date_trips($1, $2)
-        LEFT JOIN gtfs_stop_times USING (feed_index, trip_index)
+        LEFT JOIN gtfs.stop_times USING (feed_index, trip_index)
 ) a
 GROUP BY
     date,

@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
     FROM
         stat_headway_scheduled AS sched
         LEFT JOIN stat_headway_observed AS obs USING (trip_id, stop_id, "date")
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs.trips USING (feed_index, trip_id)
         LEFT JOIN stat_holidays h USING ("date")
     WHERE
         sched.date >= "start"

@@ -74,19 +74,19 @@ CREATE OR REPLACE FUNCTION get_date_trips(start date, finish date)
         FROM (
             SELECT feed_index, range.date, trip_id
             FROM date_range("start", "finish" - "start") range
-                LEFT JOIN gtfs_calendar c ON (
-                    -- address the weekday columns of gtfs_calendar as an array, using the day-of-week as an index
+                LEFT JOIN gtfs.calendar c ON (
+                    -- address the weekday columns of gtfs.calendar as an array, using the day-of-week as an index
                     (ARRAY[monday, tuesday, wednesday, thursday, friday, saturday, sunday])[extract(isodow from range.date)] = '1'
                     AND range.date BETWEEN c.start_date AND c.end_date
                 )
-                LEFT JOIN gtfs_calendar_dates USING (feed_index, date, service_id)
-                LEFT JOIN gtfs_trips USING (feed_index, service_id)
+                LEFT JOIN gtfs.calendar_dates USING (feed_index, date, service_id)
+                LEFT JOIN gtfs.trips USING (feed_index, service_id)
             WHERE exception_type IS NULL
                 AND trip_id IS NOT NULL
             UNION
             SELECT feed_index, date, trip_id
-            FROM gtfs_trips
-                LEFT JOIN gtfs_calendar_dates USING (feed_index, service_id)
+            FROM gtfs.trips
+                LEFT JOIN gtfs.calendar_dates USING (feed_index, service_id)
             WHERE exception_type = 1
                 AND date >= "start"
                 AND date < "finish"
@@ -133,9 +133,9 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
             ) AS headway
         FROM  -- list of dates beginning just before our interval
             get_date_trips(("start" - INTERVAL '1 day')::DATE, ("start" + "term")::DATE) d
-            LEFT JOIN gtfs_agency USING (feed_index)
-            LEFT JOIN gtfs_trips  USING (feed_index, trip_id)
-            LEFT JOIN gtfs_stop_times USING (feed_index, trip_id)
+            LEFT JOIN gtfs.agency USING (feed_index)
+            LEFT JOIN gtfs.trips  USING (feed_index, trip_id)
+            LEFT JOIN gtfs.stop_times USING (feed_index, trip_id)
         WINDOW rds AS (PARTITION BY route_id, direction_id, stop_id ORDER BY wall_time(date, arrival_time, agency_timezone))
     ) a WHERE a.date >= "start"
     $$
@@ -159,8 +159,8 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         day_period((call_time - deviation) AT TIME ZONE agency_timezone) as period,
         call_time - LAG(call_time) OVER (rds) AS headway
     FROM calls as c
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-        LEFT JOIN gtfs_agency USING (feed_index)
+        LEFT JOIN gtfs.trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs.agency USING (feed_index)
     WHERE c.date >= "start"
         AND c.date < ("start" + "term")::DATE
     WINDOW rds AS (PARTITION BY route_id, c.direction_id, stop_id ORDER BY call_time)
@@ -203,8 +203,8 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         COUNT(NULLIF(false, deviation > interval '1800 seconds'))::int AS late_30
 
     FROM calls
-        LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-        LEFT JOIN gtfs_agency USING (feed_index)
+        LEFT JOIN gtfs.trips USING (feed_index, trip_id)
+        LEFT JOIN gtfs.agency USING (feed_index)
 
     WHERE source = 'I'
         AND calls.date - deviation >= "start"

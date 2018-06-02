@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 20)) / day_period_length(period) * 60)::numeric AS wtp_20,
         (SUM(LEAST(EXTRACT(epoch FROM headway) / 60, 30)) / day_period_length(period) * 60)::numeric AS wtp_30
     FROM stat_headway_observed
-        LEFT JOIN gtfs_trips USING (trip_id)
+        LEFT JOIN gtfs.trips USING (trip_id)
         LEFT JOIN stat_holidays h USING (date)
     WHERE date >= "start"
         AND date < ("start" + "term")::DATE

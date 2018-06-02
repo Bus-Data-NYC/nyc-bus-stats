@@ -13,8 +13,8 @@ CREATE OR REPLACE FUNCTION get_routeratio (feed integer)
         direction_id,
         shape_id,
         (length / ST_Distance(ST_StartPoint(the_geom)::geography, ST_EndPoint(the_geom)::geography))::numeric(10, 2) routeratio
-    FROM gtfs_shape_geoms
-        LEFT JOIN gtfs_trips using (feed_index, shape_id)
+    FROM gtfs.shape_geoms
+        LEFT JOIN gtfs.trips using (feed_index, shape_id)
     WHERE feed_index = "feed"
         AND route_id IS NOT NULL
     GROUP BY feed_index, route_id, direction_id, shape_id
@@ -63,9 +63,9 @@ CREATE OR REPLACE FUNCTION get_spacing(feed integer)
             direction_id,
             trip_id,
             shape_dist_traveled - lag(shape_dist_traveled) OVER (shape) as spacing
-        FROM gtfs_stop_times
-            LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-            LEFT JOIN gtfs_routes USING (feed_index, route_id)
+        FROM gtfs.stop_times
+            LEFT JOIN gtfs.trips USING (feed_index, trip_id)
+            LEFT JOIN gtfs.routes USING (feed_index, route_id)
         WHERE feed_index = "feed"
         WINDOW shape AS (PARTITION BY feed_index, trip_id ORDER BY stop_sequence)
     ) spacing

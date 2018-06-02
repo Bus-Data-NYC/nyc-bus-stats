@@ -10,22 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PG_DATABASE = nycbus
-PSQLFLAGS = $(PG_DATABASE)
+PGDATABASE ?= $(USER)
+PGUSER ?= $(USER)
 
-ifdef PG_HOST
-PSQLFLAGS += -h $(PG_HOST)
-endif
-
-ifdef PG_PORT
-PSQLFLAGS += -p $(PG_PORT)
-endif
-
-ifdef PG_USER
-PSQLFLAGS += -U $(PG_USER)
-endif
-
-PSQL = psql $(PSQLFLAGS)
+PSQL = psql $(PGDATABASE)
 
 GTFSSTATS = routeratio spacing
 CALLSTATS = evt cewt otp otd bunching service speed wtp

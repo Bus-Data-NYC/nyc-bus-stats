@@ -32,10 +32,10 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
         FROM calls as c
-            LEFT JOIN gtfs_trips USING (feed_index, trip_id)
-            LEFT JOIN gtfs_stop_times USING (feed_index, trip_id, stop_id)
+            LEFT JOIN gtfs.trips USING (feed_index, trip_id)
+            LEFT JOIN gtfs.stop_times USING (feed_index, trip_id, stop_id)
             LEFT JOIN stat_holidays h USING ("date")
-            LEFT JOIN gtfs_agency USING (feed_index)
+            LEFT JOIN gtfs.agency USING (feed_index)
         WHERE source = 'I'
             AND date >= "start"
             AND date < ("start" + "term")::DATE

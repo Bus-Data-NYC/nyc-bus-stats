@@ -4,9 +4,9 @@ Calculate certain statistics on New York City bus calls data.
 
 ## Requirements
 
-* bash or another *nix shell
+* bash
 * Make
-* Postgres
+* PostGreSQL (9.5+) with PostGIS (2.3+)
 
 ## Organization and syntax
 
@@ -26,20 +26,21 @@ In general, stats are run for a particular release of GTFS data or a month of ca
 
 The `MONTH` variable is in a different format: YYYY-MM, e.g: `MONTH=2015-10`.
 
-## Loading calls data into MySQL
+## Loading calls data into PostGres
 
-To run most stats, you must have MySQL available on your local machine. By default the database is named `turnaround` and the MySQL username is assumed to be your shell username. You can specify the mysql settings with make variables: 
-```
-make init USER=myusername
-make init DATABASE=mydatabase
-make init USER=myusername PASS=mypassword
-```
+To run most stats, you must have psql available on your local machine. You can specify the psql connection settings with the standard [postgres environment variables](https://www.postgresql.org/docs/current/static/libpq-envars.html): 
 
-This sets up the Postgres database and downloads stop and trip data into it:
+This sets up the Postgres database:
 ```
+PGUSER=myusername
+PGDATABASE=foo
+PGHOST=example.com
 make init
 ```
 
+## Loading calls data
+
+That's not automated, unless you're generating it yourself with [inferno](https://github.com/Bus-Data-NYC/inferno).
 
 ## Statistics
 
