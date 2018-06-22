@@ -10,3 +10,4 @@ spacing
 evt
 on_time_departure
 *.png
+schema.sql

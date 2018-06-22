@@ -22,7 +22,7 @@ DROP TABLE IF EXISTS stat.spacing;
 DROP TABLE IF EXISTS stat.stopdist;
 
 -- Add indices to calls table
-CREATE INDEX calls_date ON calls (date);
+CREATE INDEX IF NOT EXISTS calls_date ON calls (date);
 
 BEGIN;
 
@@ -30,7 +30,7 @@ CREATE TABLE stat.date_trips (
     feed_index integer not null,
     trip_id text not null,
     "date" date not null,
-    CONSTRAINT stat.date_trips_pk PRIMARY KEY (feed_index, "date", trip_id)
+    CONSTRAINT date_trips_pk PRIMARY KEY (feed_index, "date", trip_id)
 );
 
 CREATE TABLE stat.holidays (
@@ -68,7 +68,7 @@ CREATE TABLE stat.schedule_hours (
     scheduled integer not null,
     pickups integer not null,
     exception integer not null,
-    CONSTRAINT stat.schedule_hours_pk PRIMARY KEY ("date", route_id, direction_id, stop_id, hour)
+    CONSTRAINT schedule_hours_pk PRIMARY KEY ("date", route_id, direction_id, stop_id, hour)
 );
 
 CREATE TABLE stat.headway_scheduled (
@@ -79,7 +79,7 @@ CREATE TABLE stat.headway_scheduled (
     period int not null,
     headway interval DEFAULT NULL
 );
-CREATE UNIQUE INDEX stat.hws_idx ON stat.headway_scheduled
+CREATE UNIQUE INDEX hws_idx ON stat.headway_scheduled
     (feed_index, trip_id, stop_id, "date");
 
 CREATE TABLE stat.headway_observed (
@@ -90,7 +90,7 @@ CREATE TABLE stat.headway_observed (
     headway interval DEFAULT NULL,
     PRIMARY KEY (trip_id, stop_id, date)
 );
-CREATE INDEX stat.hwob_date ON stat.headway_observed ("date");
+CREATE INDEX hwob_date ON stat.headway_observed ("date");
 
 CREATE TABLE stat.bunching (
     month date NOT NULL,

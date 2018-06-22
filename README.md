@@ -38,6 +38,8 @@ PGHOST=example.com
 make init
 ```
 
+This will create a schema named `stat` with several empty tables.
+
 ## Loading calls data
 
 That's not automated, unless you're generating it yourself with [inferno](https://github.com/Bus-Data-NYC/inferno).

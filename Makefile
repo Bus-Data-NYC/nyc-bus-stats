@@ -58,7 +58,10 @@ headway-%:
 	$(PSQL) -c "INSERT INTO stat.headway_$* \
 		SELECT * FROM get_headway_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
 
-init: $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)
-	for f in $^; do $(PSQL) -f $$f; done
+init: schema.sql
+	$(PSQL) -f $<
+
+schema.sql: $(foreach x,tables util gtfs $(CALLSTATS),sql/$x.sql)
+	cat $^ > $@
 
 stats: ; mkdir -p $@
