@@ -25,7 +25,7 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         INNER JOIN gtfs.stop_times USING (feed_index, trip_id)
         LEFT JOIN gtfs.trips t USING (feed_index, trip_id)
         LEFT JOIN calls c USING (feed_index, date, trip_id, stop_id)
-        LEFT JOIN stat_holidays h USING (date)
+        LEFT JOIN stat.holidays h USING (date)
         LEFT JOIN gtfs.agency USING (feed_index)
 
     WHERE sh.date >= "start"

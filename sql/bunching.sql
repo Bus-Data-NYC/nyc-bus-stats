@@ -20,10 +20,10 @@ CREATE OR REPLACE FUNCTION get_bunching (start date, term interval)
         -- number of rows where observed interval is less than 1/4 of scheduled interval
         COUNT(NULLIF(FALSE, COALESCE(obs.headway < sched.headway * 0.25, FALSE)))::int AS bunch_count
     FROM
-        stat_headway_scheduled AS sched
-        LEFT JOIN stat_headway_observed AS obs USING (trip_id, stop_id, "date")
+        stat.headway_scheduled AS sched
+        LEFT JOIN stat.headway_observed AS obs USING (trip_id, stop_id, "date")
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
-        LEFT JOIN stat_holidays h USING ("date")
+        LEFT JOIN stat.holidays h USING ("date")
     WHERE
         sched.date >= "start"
         AND sched.date < ("start" + "term")::date

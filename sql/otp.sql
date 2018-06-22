@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION get_otp (start date, term interval)
         COUNT(NULLIF(false, deviation > interval '5 min'))::int AS late
     FROM calls c
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
-        LEFT JOIN stat_holidays h using ("date")
+        LEFT JOIN stat.holidays h using ("date")
         LEFT JOIN gtfs.agency USING (feed_index)
     WHERE c.date >= "start"
         AND c.date < "start" + "term"

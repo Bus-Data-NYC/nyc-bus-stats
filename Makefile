@@ -36,8 +36,8 @@ all:
 $(CALLSTATS): %: stats/$(MONTH)-%.tsv.gz
 
 $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* SELECT DATE '$(MONTH)-01' as month, * FROM get_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
-	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE month = '$(MONTH)-01') $(OUTOPTS)" \
+	$(PSQL) -c "INSERT INTO stat.$* SELECT DATE '$(MONTH)-01' as month, * FROM get_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
+	$(PSQL) -c "COPY (SELECT * FROM stat.$* WHERE month = '$(MONTH)-01') $(OUTOPTS)" \
 		| gzip - > $@
 
 #
@@ -46,8 +46,8 @@ $(foreach x,$(CALLSTATS),stats/$(MONTH)-$x.tsv.gz): stats/$(MONTH)-%.tsv.gz: | s
 $(GTFSSTATS): %: stats/$(FEED)-%.tsv.gz
 
 $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | stats
-	$(PSQL) -c "INSERT INTO stat_$* SELECT * FROM get_$*(ARRAY[$(subst -,$(comma),$(FEED))]) ON CONFLICT DO NOTHING"; \
-	$(PSQL) -c "COPY (SELECT * FROM stat_$* WHERE feed_index = ANY(ARRAY[$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
+	$(PSQL) -c "INSERT INTO stat.$* SELECT * FROM get_$*(ARRAY[$(subst -,$(comma),$(FEED))]) ON CONFLICT DO NOTHING"; \
+	$(PSQL) -c "COPY (SELECT * FROM stat.$* WHERE feed_index = ANY(ARRAY[$(subst -,$(comma),$(FEED))])) $(OUTOPTS)" \
 		| gzip - > $@
 
 
@@ -55,7 +55,7 @@ $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | sta
 prepare: headway-observed headway-scheduled
 
 headway-%:
-	$(PSQL) -c "INSERT INTO stat_headway_$* \
+	$(PSQL) -c "INSERT INTO stat.headway_$* \
 		SELECT * FROM get_headway_$*('$(MONTH)-01', '$(INTERVAL)') ON CONFLICT DO NOTHING"
 
 init: $(foreach x,schema util gtfs $(CALLSTATS),sql/$x.sql)

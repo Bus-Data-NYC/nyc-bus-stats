@@ -22,10 +22,10 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
         (AVG(EXTRACT(EPOCH FROM obs.headway - sched.headway)::NUMERIC / 60.))::numeric(10, 2) AS cewt_avg
 
     FROM
-        stat_headway_observed obs
-        INNER JOIN stat_headway_scheduled sched USING (trip_id, stop_id, date)
+        stat.headway_observed obs
+        INNER JOIN stat.headway_scheduled sched USING (trip_id, stop_id, date)
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
-        LEFT JOIN stat_holidays AS h USING ("date")
+        LEFT JOIN stat.holidays AS h USING ("date")
 
     WHERE 
         obs.date >= "start"

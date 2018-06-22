@@ -43,7 +43,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
                 get_date_trips("start", ("start" + "term")::date) as d
                 LEFT JOIN gtfs.trips USING (feed_index, trip_id)
                 LEFT JOIN gtfs.stop_times USING (feed_index, trip_id)
-                LEFT JOIN stat_holidays USING ("date")
+                LEFT JOIN stat.holidays USING ("date")
                 LEFT JOIN gtfs.agency USING (feed_index)
             ) x
         GROUP BY

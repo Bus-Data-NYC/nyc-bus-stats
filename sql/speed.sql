@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
         FROM calls as c
             LEFT JOIN gtfs.trips USING (feed_index, trip_id)
             LEFT JOIN gtfs.stop_times USING (feed_index, trip_id, stop_id)
-            LEFT JOIN stat_holidays h USING ("date")
+            LEFT JOIN stat.holidays h USING ("date")
             LEFT JOIN gtfs.agency USING (feed_index)
         WHERE source = 'I'
             AND date >= "start"
