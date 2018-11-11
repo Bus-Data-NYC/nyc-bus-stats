@@ -34,12 +34,12 @@ LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION day_period_length(integer)
     RETURNS integer AS $$
-    SELECT CASE
-        WHEN $1 = 1 THEN 3
-        WHEN $1 = 2 THEN 6
-        WHEN $1 = 3 THEN 3
-        WHEN $1 = 4 THEN 4
-        WHEN $1 = 5 THEN 8
+    SELECT CASE $1
+        WHEN 1 THEN 3
+        WHEN 2 THEN 6
+        WHEN 3 THEN 3
+        WHEN 4 THEN 4
+        WHEN 5 THEN 8
     END
     $$
 LANGUAGE SQL IMMUTABLE;
