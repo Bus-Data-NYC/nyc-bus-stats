@@ -66,7 +66,7 @@ ORDER BY rds_index, call_time;
   1. measure actual headways (headways_observed)
   2. measure scheduled headways (headways_scheduled)
   3. Calculate a weighted average of average wait times over each route/direction/stop/period/weekend.
-  4. Also count the total number of calls in ach 
+  4. Also count the total number of calls in ach
 
 -- 15m
 INSERT tmp_awt SELECT
@@ -77,13 +77,14 @@ INSERT tmp_awt SELECT
   LEAST(SUM(headway * headway), @max_int) AS ah_sq
 FROM hw_observed
 WHERE year BETWEEN YEAR(@start_date) AND YEAR(@end_date)
-  AND month BETWEEN MONTH(@start_date) AND MONTH(@end_date) 
+  AND month BETWEEN MONTH(@start_date) AND MONTH(@end_date)
   AND headway IS NOT NULL
 GROUP BY date,
   rds_index,
   HOUR(datetime);
 
 /* Record Scheduled Wait Times */
+
 INSERT ewt SELECT
   date,
   rds_index,

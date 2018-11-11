@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION get_wtp ("start" DATE, term INTERVAL)
         LEFT JOIN stat.holidays h USING (date)
     WHERE date >= "start"
         AND date < ("start" + "term")::DATE
-    GROUP BY 
+    GROUP BY
         route_id,
         direction_id,
         stop_id,

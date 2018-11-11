@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     date,
     hour,
     route_id,

@@ -95,7 +95,7 @@ CREATE OR REPLACE FUNCTION get_date_trips(start date, finish date)
     $$
 LANGUAGE SQL STABLE;
 
-/* 
+/*
  * find scheduled headways
  * Same general strategy as observed headways, except here the date of the scheduled call
  * comes from the `date_trips` table.
@@ -141,7 +141,7 @@ CREATE OR REPLACE FUNCTION get_headway_scheduled(start date, term interval)
     $$
 LANGUAGE SQL STABLE;
 
-/* 
+/*
  * Get observed headways from inferred calls data
 */
 CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)

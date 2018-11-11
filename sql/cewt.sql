@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION get_cewt (start date, term interval)
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
         LEFT JOIN stat.holidays AS h USING ("date")
 
-    WHERE 
+    WHERE
         obs.date >= "start"
         and obs.date < ("start" + "term")::DATE
         AND obs.headway IS NOT NULL

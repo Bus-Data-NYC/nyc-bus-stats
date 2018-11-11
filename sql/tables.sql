@@ -101,7 +101,7 @@ CREATE TABLE stat.bunching (
     period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     count integer NOT NULL,
     count_bunch integer NOT NULL,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.bunching_average (
@@ -113,7 +113,7 @@ CREATE TABLE stat.bunching_average (
     period integer NOT NULL CHECK (period BETWEEN 1 and 5),
     count integer NOT NULL,
     bunch_count integer NOT NULL,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.evt (
@@ -126,7 +126,7 @@ CREATE TABLE stat.evt (
     duration_avg_obs decimal not null,
     count_trips int not null,
     count_late int not null,
-    UNIQUE (month, route_id, direction_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, weekend, period)
 );
 
 CREATE TABLE stat.service (
@@ -139,7 +139,7 @@ CREATE TABLE stat.service (
     hours integer not null,
     scheduled integer not null,
     observed integer not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.otp (
@@ -152,7 +152,7 @@ CREATE TABLE stat.otp (
     early integer not null,
     on_time integer not null,
     late integer not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.ewt (
@@ -179,7 +179,7 @@ CREATE TABLE stat.cewt (
     count int not null,
     count_cewt int not null,
     cewt_avg numeric not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.wtp (
@@ -195,7 +195,7 @@ CREATE TABLE stat.wtp (
     wtp_15 int not null,
     wtp_20 int not null,
     wtp_30 int not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.speed (
@@ -208,7 +208,7 @@ CREATE TABLE stat.speed (
     distance int not null,
     travel_time int not null,
     count integer not null,
-    UNIQUE (month, route_id, direction_id, stop_id, weekend, period) 
+    UNIQUE (month, route_id, direction_id, stop_id, weekend, period)
 );
 
 CREATE TABLE stat.otd (
@@ -228,7 +228,7 @@ CREATE TABLE stat.routeratio (
     direction_id int,
     shape_id text,
     routeratio numeric,
-    UNIQUE (feed_index, route_id, direction_id, shape_id) 
+    UNIQUE (feed_index, route_id, direction_id, shape_id)
 );
 CREATE TABLE stat.spacing(
     feed_index integer,
@@ -236,7 +236,7 @@ CREATE TABLE stat.spacing(
     direction_id integer,
     count_trip integer,
     wavg numeric,
-    UNIQUE (feed_index, route_id, direction_id) 
+    UNIQUE (feed_index, route_id, direction_id)
 );
 CREATE TABLE stat.stopdist (
     feed_index integer,
