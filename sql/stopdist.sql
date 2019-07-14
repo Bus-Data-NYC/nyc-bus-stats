@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION get_stopdist(feed integer, srid int default 3627)
             , route_id
             , trip_id
             , stop_id
-            , (length * (linelocate - lag(linelocate) over (trip)))::numeric(5,2) as spacing
+            , (length * (linelocate - lag(linelocate) over (trip)))::numeric as spacing
         from (
             select
                 feed_index
