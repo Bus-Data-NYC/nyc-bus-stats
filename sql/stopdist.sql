@@ -1,13 +1,13 @@
 -- For each stop, distance traveled along route-shape from previous stop.
 CREATE OR REPLACE FUNCTION get_stopdist(feed integer, srid int default 3627)
-    RETURNS TABLE(feed_index integer, route_id text, stop_id text, spacing numeric)
+    RETURNS TABLE(feed_index integer, route_id text, direction_id int, stop_id text, spacing numeric)
     AS $$
-    SELECT feed_index, route_id, stop_id, min(spacing)
+    SELECT feed_index, route_id, direction_id, stop_id, min(spacing)
     FROM (
         SELECT
             feed_index
             , route_id
-            , trip_id
+            , direction_id
             , stop_id
             , (length * (linelocate - lag(linelocate) over (trip)))::numeric as spacing
         from (
@@ -15,6 +15,7 @@ CREATE OR REPLACE FUNCTION get_stopdist(feed integer, srid int default 3627)
                 feed_index
                 , route_id
                 , trip_id
+                , direction_id
                 , stop.stop_id
                 , stop.the_geom
                 , stop_sequence
@@ -30,12 +31,13 @@ CREATE OR REPLACE FUNCTION get_stopdist(feed integer, srid int default 3627)
         ) a
         WINDOW trip AS (PARTITION BY feed_index, route_id, trip_id order by stop_sequence)
     ) b
-    GROUP BY feed_index, route_id, stop_id
+    WHERE spacing IS NOT NULL
+    GROUP BY feed_index, route_id, direction_id, stop_id
     $$
 LANGUAGE SQL STABLE;
 
 CREATE OR REPLACE FUNCTION get_stopdist (feeds int[], srid int default 3627)
-    RETURNS TABLE(feed_index integer, route_id text, stop_id text, spacing numeric)
+    RETURNS TABLE(feed_index integer, route_id text, direction_id int, stop_id text, spacing numeric)
     AS $$
     WITH a (feed) as (SELECT unnest(feeds))
     SELECT b.* FROM a, get_stopdist(feed) b
