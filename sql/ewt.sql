@@ -134,3 +134,32 @@ SELECT
     rds_index,
     weekend,
     period;
+
+
+/* merge the two headway tables, calculating:
+  -- observed expected wt
+  -- scheduled expected wt
+  -- excess wt
+ */
+CREATE OR REPLACE FUNCTION get_excess_wait(start date, term interval)
+    RETURNS TABLE (
+        route_id text,
+        direction_id int,
+        stop_id text,
+        weekend int,
+        period int,
+        sched_wt interval,
+        obs_wt interval,
+        excess_wt interval,
+        sched_calls int,
+        obs_calls int
+    )
+    AS $$
+    SELECT
+
+    FROM stat.headway_scheduled
+        LEFT JOIN stat.headway_observed ON (trip_id, stop_id, "date", period)
+    WHERE "date" BETWEEN "start" AND "start" + "term"
+    $$
+LANGUAGE SQL STABLE;
+

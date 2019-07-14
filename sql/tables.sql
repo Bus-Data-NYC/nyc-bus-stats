@@ -248,9 +248,10 @@ CREATE TABLE stat.spacing(
 );
 CREATE TABLE stat.stopdist (
     feed_index integer,
+    route_id text,
     stop_id text,
-    wavg numeric,
-    CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, stop_id)
+    spacing numeric,
+    CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, stop_id)
 );
 
 COMMIT;

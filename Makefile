@@ -15,7 +15,7 @@ PGUSER ?= $(USER)
 
 PSQL = psql $(PGDATABASE)
 
-GTFSSTATS = routeratio spacing
+GTFSSTATS = routeratio spacing stopdist
 CALLSTATS = evt cewt otp otd bunching service speed wtp
 
 MONTH = 2016-10
