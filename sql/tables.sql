@@ -250,7 +250,8 @@ CREATE TABLE stat.stopdist (
     feed_index integer,
     route_id text,
     direction_id integer,
-    stop_id text,
+    lead_stop_id text,
+    lag_stop_id text,
     spacing numeric,
     CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, stop_id)
 );
