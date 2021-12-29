@@ -253,7 +253,7 @@ CREATE TABLE stat.stopdist (
     lead_stop_id text,
     lag_stop_id text,
     spacing numeric,
-    CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, stop_id)
+    CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, lead_stop_id, lag_stop_id)
 );
 
 COMMIT;

@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION get_speed (start date, term interval)
             stop_id,
             call_time - LAG(call_time) OVER (run) AS elapsed,
             shape_dist_traveled - LAG(shape_dist_traveled) OVER (run) AS dist
-        FROM calls as c
+        FROM inferno.calls as c
             LEFT JOIN gtfs.trips USING (feed_index, trip_id)
             LEFT JOIN gtfs.stop_times USING (feed_index, trip_id, stop_id)
             LEFT JOIN stat.holidays h USING ("date")

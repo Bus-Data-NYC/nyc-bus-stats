@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
     FROM get_date_trips("start", ("start" + "term")::date) AS sh
         INNER JOIN gtfs.stop_times USING (feed_index, trip_id)
         LEFT JOIN gtfs.trips t USING (feed_index, trip_id)
-        LEFT JOIN calls c USING (feed_index, date, trip_id, stop_id)
+        LEFT JOIN inferno.calls c USING (feed_index, date, trip_id, stop_id)
         LEFT JOIN stat.holidays h USING (date)
         LEFT JOIN gtfs.agency USING (feed_index)
 
