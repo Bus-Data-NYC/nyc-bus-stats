@@ -59,7 +59,7 @@ CREATE OR REPLACE FUNCTION get_evt (start DATE, term INTERVAL)
                 trip_id,
                 COUNT(*) calls,
                 MAX(call_time) - MIN(call_time) AS duration
-            FROM calls c
+            FROM inferno.calls c
             WHERE c.date >= start::DATE
                 AND c.date < "start" + "term"
             GROUP BY c.date,

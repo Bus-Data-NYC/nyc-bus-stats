@@ -1,4 +1,4 @@
-CREATE SCHEMA if NOT EXISTS stat;
+CREATE SCHEMA IF NOT EXISTS stat;
 
 DROP TABLE IF EXISTS stat.date_trips;
 DROP TABLE IF EXISTS stat.holidays;
@@ -22,7 +22,7 @@ DROP TABLE IF EXISTS stat.spacing;
 DROP TABLE IF EXISTS stat.stopdist;
 
 -- Add indices to calls table
-CREATE INDEX IF NOT EXISTS calls_date ON calls (date);
+CREATE INDEX IF NOT EXISTS calls_date ON inferno.calls (date);
 
 BEGIN;
 

@@ -158,7 +158,7 @@ CREATE OR REPLACE FUNCTION get_headway_observed(start date, term interval)
         c.date,
         day_period((call_time - deviation) AT TIME ZONE agency_timezone) as period,
         call_time - LAG(call_time) OVER (rds) AS headway
-    FROM calls as c
+    FROM inferno.calls as c
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
         LEFT JOIN gtfs.agency USING (feed_index)
     WHERE c.date >= "start"
@@ -202,7 +202,7 @@ CREATE OR REPLACE FUNCTION get_adherence(start date, term interval)
         COUNT(NULLIF(false, deviation > interval '1200 seconds'))::int AS late_20,
         COUNT(NULLIF(false, deviation > interval '1800 seconds'))::int AS late_30
 
-    FROM calls
+    FROM inferno.calls
         LEFT JOIN gtfs.trips USING (feed_index, trip_id)
         LEFT JOIN gtfs.agency USING (feed_index)
 

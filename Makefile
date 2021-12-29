@@ -10,10 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PGDATABASE ?= $(USER)
-PGUSER ?= $(USER)
-
-PSQL = psql $(PGDATABASE)
+PSQL = psql
 
 GTFSSTATS = routeratio spacing stopdist
 CALLSTATS = evt cewt otp otd bunching service speed wtp

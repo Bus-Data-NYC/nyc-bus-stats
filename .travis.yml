@@ -21,7 +21,7 @@ git:
 
 env:
   global:
-    - PG_DATABASE=postgres
+    - PGDATABASE=postgres
     - MONTH=2017-05
     - INTERVAL="2 DAYS"
 
@@ -45,12 +45,12 @@ before_install:
   - zip -1jr gtfs-sql-importer/gtfs.zip data/test/*.txt
 
 install:
-  - psql $PG_DATABASE -f inferno/sql/calls.sql
-  - make -e init drop_constraints drop_indices load add_indices GTFS=gtfs.zip -C gtfs-sql-importer
-  - psql $PG_DATABASE -c "alter table gtfs.shape_geoms alter column feed_index set default 1"
-  - psql $PG_DATABASE -c "alter table calls alter column feed_index set default 1"
-  - psql $PG_DATABASE -c "\copy calls (trip_id, deviation, call_time, stop_id, vehicle_id, direction_id, source, date, run_index) from 'data/test/calls.txt' csv header"
-  - psql $PG_DATABASE -c "\copy gtfs.shape_geoms (shape_id, length, the_geom) from 'data/test/shape_geoms.txt' csv header"
+  - psql -f inferno/sql/calls.sql
+  - make init drop_constraints drop_indices load add_indices GTFS=gtfs.zip -C gtfs-sql-importer
+  - psql -c "alter table gtfs.shape_geoms alter column feed_index set default 1"
+  - psql -c "alter table inferno.calls alter column feed_index set default 1"
+  - psql -c "\copy calls (trip_id, deviation, call_time, stop_id, vehicle_id, direction_id, source, date, run_index) from 'data/test/calls.txt' csv header"
+  - psql -c "\copy gtfs.shape_geoms (shape_id, length, the_geom) from 'data/test/shape_geoms.txt' csv header"
   - make -e init
 
 before_script:
