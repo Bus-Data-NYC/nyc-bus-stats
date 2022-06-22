@@ -11,7 +11,7 @@ SELECT
   COUNT(*)::int count
 FROM (
   SELECT
-    route_id,
+    trips.route_id,
     direction_id,
     stop_id,
     (EXTRACT(isodow FROM trip_start_date) > 5)::int AS weekend,
@@ -19,8 +19,8 @@ FROM (
     ST_Distance(ST_MakePoint(longitude, latitude)::geography, lag(ST_MakePoint(longitude, latitude)::geography) over (run)) dist,
     EXTRACT(epoch FROM timestamp - lag(timestamp) OVER (run)) as elapsed
   FROM rt.vehicle_positions
-    LEFT JOIN stat.stop_direction USING (route_id, stop_id)
-  WHERE trip_start_date >= '2021-10-01'::date AND trip_start_date < '2021-11-01'::date
+    LEFT JOIN gtfs.trips USING (trip_id)
+  WHERE trip_start_date >= :'month'::date AND trip_start_date < (:'month'::date + '1 MONTH'::interval)
   WINDOW run AS (PARTITION BY trip_start_date, vehicle_id, trip_id ORDER BY timestamp)
 ) raw
 WHERE elapsed > 0 AND dist > 0

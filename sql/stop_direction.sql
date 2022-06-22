@@ -11,7 +11,7 @@ select distinct
     count(*)
 from gtfs.trips
     left join gtfs.stop_times using (feed_index, trip_id)
-where pickup_type = 1
+where pickup_type = 0
 group by 1, 2, 3;
 
 create unique index on stat.stop_direction ( route_id, stop_id );
