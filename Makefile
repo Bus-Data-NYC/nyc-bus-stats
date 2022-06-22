@@ -48,7 +48,10 @@ $(foreach x,$(GTFSSTATS),stats/$(FEED)-$x.tsv.gz): stats/$(FEED)-%.tsv.gz: | sta
 	| gzip - > $@
 
 # Calculate headway for the given month.
-prepare: headway-observed headway-scheduled
+prepare: headway-observed headway-scheduled shape-dist-traveled
+
+shape-dist-traveled:
+	$(PSQL) -f sql/shape-dist-traveled.sql
 
 headway-%:
 	$(PSQL) -c "INSERT INTO stat.headway_$* \

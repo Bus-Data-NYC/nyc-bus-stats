@@ -256,4 +256,13 @@ CREATE TABLE stat.stopdist (
     CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, lead_stop_id, lag_stop_id)
 );
 
+CREATE TABLE gtfs.shape_dist_traveled (
+    feed_index int,
+    route_id text,
+    shape_id text,
+    stop_id text,
+    shape_dist_traveled double precision,
+    PRIMARY KEY (feed_index, route_id, shape_id, stop_id)
+);
+
 COMMIT;
