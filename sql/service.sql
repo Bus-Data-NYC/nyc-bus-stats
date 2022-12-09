@@ -32,10 +32,6 @@ CREATE OR REPLACE FUNCTION get_service ("start" DATE, term INTERVAL)
         AND sh.date < ("start" + "term")::DATE
 
     GROUP BY
-        route_id,
-        t.direction_id,
-        stop_id,
-        EXTRACT(isodow FROM sh.date) > 5 OR holiday IS NOT NULL,
-        day_period(wall_time(sh.date, arrival_time, agency_timezone))
+        1, 2, 3, 4, 5
     $$
 LANGUAGE SQL STABLE;
