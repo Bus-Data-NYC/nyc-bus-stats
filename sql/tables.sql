@@ -265,4 +265,16 @@ CREATE TABLE gtfs.shape_dist_traveled (
     PRIMARY KEY (feed_index, route_id, shape_id, stop_id)
 );
 
+CREATE TABLE stat.trip_updates (
+    date date,
+    route_id text,
+    direction_id integer,
+    weekend integer,
+    period integer,
+    trip_count integer,
+    PRIMARY KEY (date, route_id, direction_id, period)
+);
+
+COMMENT ON TABLE stat.trip_updates IS 'GTFS-RT trip updates, summarized. Assumes all trip updates as "scheduled"';
+
 COMMIT;

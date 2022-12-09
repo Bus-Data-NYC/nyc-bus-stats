@@ -13,7 +13,7 @@
 PSQL = psql
 
 GTFSSTATS = routeratio spacing stopdist
-CALLSTATS = evt cewt otp otd bunching service speed wtp
+CALLSTATS = evt cewt otp otd bunching service speed wtp trip_updates
 
 MONTH = 2016-10
 FEED = 1
