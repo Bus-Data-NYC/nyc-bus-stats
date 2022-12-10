@@ -23,6 +23,7 @@ DROP TABLE IF EXISTS stat.stopdist;
 
 -- Add indices to calls table
 CREATE INDEX IF NOT EXISTS calls_date ON inferno.calls (date);
+CREATE INDEX IF NOT EXISTS calls_stop_idx ON inferno.calls (feed_index, date, trip_id, direction_id, stop_id);
 
 BEGIN;
 
@@ -30,7 +31,8 @@ CREATE TABLE stat.date_trips (
     feed_index integer not null,
     trip_id text not null,
     "date" date not null,
-    CONSTRAINT date_trips_pk PRIMARY KEY (feed_index, "date", trip_id)
+    PRIMARY KEY (feed_index, "date", trip_id),
+    UNIQUE ("date", trip_id)
 );
 
 CREATE TABLE stat.holidays (
@@ -66,6 +68,19 @@ VALUES
   ('2019-11-28','Thanksgiving'),
   ('2019-12-25','Christmas')
 ;
+
+CREATE TABLE stat.schedule_observed (
+    "date" date not null,
+    route_id text,
+    direction_id int,
+    weekend int,
+    period int,
+    scheduled integer,
+    observed integer
+    PRIMARY KEY ("date", route_id, direction_id, weekend, period)
+);
+
+COMMENT ON TABLE stat.schedule IS 'Scheduled and observed trips by date, route, direction, weekend and period';
 
 CREATE TABLE stat.schedule_hours (
     "date" date not null,
@@ -256,7 +271,7 @@ CREATE TABLE stat.stopdist (
     CONSTRAINT stopdist_pk PRIMARY KEY (feed_index, route_id, lead_stop_id, lag_stop_id)
 );
 
-CREATE TABLE gtfs.shape_dist_traveled (
+CREATE TABLE stat.shape_dist_traveled (
     feed_index int,
     route_id text,
     shape_id text,
@@ -276,5 +291,23 @@ CREATE TABLE stat.trip_updates (
 );
 
 COMMENT ON TABLE stat.trip_updates IS 'GTFS-RT trip updates, summarized. Assumes all trip updates as "scheduled"';
+
+CREATE TABLE stat.position_trip_count (
+    date date,
+    route_id text,
+    direction_id integer,
+    trips integer,
+    PRIMARY KEY (date, route_id, direction_id)
+);
+
+COMMENT ON TABLE stat.position_route_count IS 'Count of distinct trips in positions data by date, route and direction';
+
+CREATE TABLE stat.position_trip_list (
+    date date,
+    trip_id text,
+    PRIMARY KEY (date, trip_id)
+);
+
+COMMENT ON TABLE stat.position_trip_list IS 'List of trips observed in the position data';
 
 COMMIT;
