@@ -12,6 +12,6 @@ SELECT
 FROM gtfs.stop_times AS st
     JOIN gtfs.stops USING (feed_index, stop_id)
     JOIN gtfs.trips AS t USING (feed_index, trip_id)
-    LEFT JOIN gtfs.shape_geoms AS sg USING (feed_index, shape_id),
+    JOIN gtfs.shape_geoms AS sg USING (feed_index, shape_id),
     ST_Transform(sg.the_geom, 3627) route_geom
 ON CONFLICT DO NOTHING;
